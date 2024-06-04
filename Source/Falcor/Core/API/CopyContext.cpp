@@ -148,6 +148,19 @@ std::vector<uint8_t> CopyContext::readTextureSubresource(const Texture* pTexture
     return pTask->getData();
 }
 
+#if FALCOR_HAS_CUDA
+CopyContext::MapTextureTask::SharedPtr CopyContext::asyncMapTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex)
+{
+    return CopyContext::MapTextureTask::create(this, pTexture, subresourceIndex);
+}
+
+void* CopyContext::mapTextureSubresourceDevice(const Texture* pTexture, uint32_t subresourceIndex)
+{
+    CopyContext::MapTextureTask::SharedPtr pTask = asyncMapTextureSubresource(pTexture, subresourceIndex);
+    return pTask->getDataDevice();
+}
+#endif
+
 bool CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState, const ResourceViewInfo* pViewInfo)
 {
     const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
@@ -406,6 +419,87 @@ std::vector<uint8_t> CopyContext::ReadTextureTask::getData() const
     getData(result.data(), result.size());
     return result;
 }
+
+#if FALCOR_HAS_CUDA
+CopyContext::MapTextureTask::SharedPtr CopyContext::MapTextureTask::create(
+    CopyContext* pCtx,
+    const Texture* pTexture,
+    uint32_t subresourceIndex
+)
+{
+    SharedPtr pThis = SharedPtr(new MapTextureTask);
+    pThis->mpContext = pCtx;
+    // Get footprint
+    gfx::ITextureResource* srcTexture = pTexture->getGfxTextureResource();
+    gfx::FormatInfo formatInfo;
+    gfx::gfxGetFormatInfo(srcTexture->getDesc()->format, &formatInfo);
+
+    auto mipLevel = pTexture->getSubresourceMipLevel(subresourceIndex);
+    pThis->mActualRowSize =
+        uint32_t((pTexture->getWidth(mipLevel) + formatInfo.blockWidth - 1) / formatInfo.blockWidth * formatInfo.blockSizeInBytes);
+    size_t rowAlignment = 1;
+    pCtx->mpDevice->getGfxDevice()->getTextureRowAlignment(&rowAlignment);
+    pThis->mRowSize = align_to(static_cast<uint32_t>(rowAlignment), pThis->mActualRowSize);
+    uint64_t rowCount = (pTexture->getHeight(mipLevel) + formatInfo.blockHeight - 1) / formatInfo.blockHeight;
+    uint64_t size = pTexture->getDepth(mipLevel) * rowCount * pThis->mRowSize;
+
+    // Create buffer
+    pThis->mpBuffer = pCtx->getDevice()->createBuffer(size, ResourceBindFlags::Shared, MemoryType::DeviceLocal, nullptr);
+
+    // Copy from texture to buffer
+    pCtx->resourceBarrier(pTexture, Resource::State::CopySource);
+    auto encoder = pCtx->getLowLevelData()->getResourceCommandEncoder();
+    gfx::SubresourceRange srcSubresource = {};
+    srcSubresource.baseArrayLayer = pTexture->getSubresourceArraySlice(subresourceIndex);
+    srcSubresource.mipLevel = mipLevel;
+    srcSubresource.layerCount = 1;
+    srcSubresource.mipLevelCount = 1;
+    encoder->copyTextureToBuffer(
+        pThis->mpBuffer->getGfxBufferResource(),
+        0,
+        size,
+        pThis->mRowSize,
+        srcTexture,
+        gfx::ResourceState::CopySource,
+        srcSubresource,
+        gfx::ITextureResource::Offset3D(0, 0, 0),
+        gfx::ITextureResource::Extents{
+            static_cast<gfx::GfxIndex>(pTexture->getWidth(mipLevel)),
+            static_cast<gfx::GfxIndex>(pTexture->getHeight(mipLevel)),
+            static_cast<gfx::GfxIndex>(pTexture->getDepth(mipLevel))
+        }
+    );
+    pCtx->setPendingCommands(true);
+
+    // Create a fence and signal
+    pThis->mpFence = pCtx->getDevice()->createFence();
+    pThis->mpFence->breakStrongReferenceToDevice();
+    pCtx->submit(false);
+    pCtx->signal(pThis->mpFence.get());
+    pThis->mRowCount = (uint32_t)rowCount;
+    pThis->mDepth = pTexture->getDepth(mipLevel);
+    return pThis;
+}
+
+void* CopyContext::MapTextureTask::getDataDevice() const
+{
+    size_t size = size_t(mRowCount) * mActualRowSize * mDepth;
+    void* dst = cuda_utils::mallocDevice(size);
+    cuda_utils::ExternalMemory* cudaMemory = mpBuffer->getCudaMemory();
+
+    // handle alignment
+    if (mActualRowSize != mRowSize)
+    {
+        void* src = cudaMemory->getMappedData();
+        for (uint32_t r = 0; r < mRowCount; r++)
+            cuda_utils::memcpyDeviceToDevice((char*)dst + mActualRowSize * r, (char*)src + mRowSize * r, mActualRowSize);
+    }
+    else
+        cuda_utils::memcpyDeviceToDevice(dst, cudaMemory->getMappedData(), size);
+
+    return dst;
+}
+#endif
 
 bool CopyContext::textureBarrier(const Texture* pTexture, Resource::State newState)
 {

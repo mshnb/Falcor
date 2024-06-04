@@ -68,6 +68,26 @@ public:
         uint32_t mDepth;
     };
 
+#if FALCOR_HAS_CUDA
+    class FALCOR_API MapTextureTask
+    {
+    public:
+        using SharedPtr = std::shared_ptr<MapTextureTask>;
+        static SharedPtr create(CopyContext* pCtx, const Texture* pTexture, uint32_t subresourceIndex);
+        void* getDataDevice() const;
+
+    private:
+        MapTextureTask() = default;
+        ref<Fence> mpFence;
+        ref<Buffer> mpBuffer;
+        CopyContext* mpContext;
+        uint32_t mRowCount;
+        uint32_t mRowSize;
+        uint32_t mActualRowSize;
+        uint32_t mDepth;
+    };
+#endif
+
     /**
      * Constructor.
      * Throws an exception if creation failed.
@@ -223,6 +243,16 @@ public:
      * Read texture data Asynchronously
      */
     ReadTextureTask::SharedPtr asyncReadTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex);
+
+
+#if FALCOR_HAS_CUDA
+    /**
+     * Map texture data Asynchronously
+     */
+    MapTextureTask::SharedPtr asyncMapTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex);
+
+    void* mapTextureSubresourceDevice(const Texture* pTexture, uint32_t subresourceIndex);
+#endif
 
     /**
      * Get the low-level context data

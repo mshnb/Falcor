@@ -274,6 +274,10 @@ public:
      */
     void getSubresourceBlob(uint32_t subresource, void* pData, size_t size) const;
 
+#if FALCOR_HAS_CUDA
+    void* getSubresourceDevice(uint32_t subresource) const;
+#endif
+
     /**
      * Capture the texture to an image file.
      * @param[in] mipLevel Requested mip-level

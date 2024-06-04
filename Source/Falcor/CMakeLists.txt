@@ -23,6 +23,10 @@ target_sources(Falcor PRIVATE
     Core/Plugin.h
     Core/SampleApp.cpp
     Core/SampleApp.h
+
+    Core/Sandbox.cpp
+    Core/Sandbox.h
+
     Core/Testbed.cpp
     Core/Testbed.h
     Core/Version.cpp

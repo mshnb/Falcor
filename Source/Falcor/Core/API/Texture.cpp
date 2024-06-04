@@ -42,6 +42,10 @@
 #include "Utils/Scripting/ndarray.h"
 #include "Core/Pass/FullScreenPass.h"
 
+#if FALCOR_HAS_CUDA
+#include "Utils/CudaUtils.h"
+#endif
+
 #include <mutex>
 
 namespace Falcor
@@ -583,6 +587,14 @@ void Texture::getSubresourceBlob(uint32_t subresource, void* pData, size_t size)
     std::memcpy(pData, data.data(), data.size());
 }
 
+#if FALCOR_HAS_CUDA
+void* Texture::getSubresourceDevice(uint32_t subresource) const
+{
+    FALCOR_CHECK(subresource < getSubresourceCount(), "'subresource' ({}) is out of range ({})", subresource, getSubresourceCount());
+    return mpDevice->getRenderContext()->mapTextureSubresourceDevice(this, subresource);
+}
+#endif
+
 void Texture::captureToFile(
     uint32_t mipLevel,
     uint32_t arraySlice,
@@ -826,6 +838,58 @@ inline void texture_from_numpy(Texture& self, pybind11::ndarray<pybind11::numpy>
     self.setSubresourceBlob(subresource, data.data(), dataSize);
 }
 
+#if FALCOR_HAS_CUDA
+inline pybind11::ndarray<pybind11::pytorch> texture_to_torch(const Texture& self, uint32_t mip_level, uint32_t array_slice)
+{
+    FALCOR_CHECK(
+        mip_level < self.getMipCount(), "'mip_level' ({}) is out of bounds. Only {} level(s) available.", mip_level, self.getMipCount()
+    );
+    FALCOR_CHECK(
+        array_slice < self.getArraySize(),
+        "'array_slice' ({}) is out of bounds. Only {} slice(s) available.",
+        array_slice,
+        self.getArraySize()
+    );
+
+    // Get image dimensions.
+    uint32_t width = self.getWidth(mip_level);
+    uint32_t height = self.getHeight(mip_level);
+    uint32_t depth = self.getDepth(mip_level);
+
+    uint32_t subresource = self.getSubresourceIndex(array_slice, mip_level);
+    Texture::SubresourceLayout layout = self.getSubresourceLayout(subresource);
+
+    size_t subresourceSize = layout.getTotalByteSize();
+    void* deviceData = self.getSubresourceDevice(subresource);
+
+    pybind11::capsule owner(deviceData, [](void* p) noexcept { cuda_utils::freeDevice(p); });
+
+    if (auto dtype = resourceFormatToDtype(self.getFormat()))
+    {
+        uint32_t channelCount = getFormatChannelCount(self.getFormat());
+        std::vector<pybind11::size_t> shape;
+        if (depth > 1)
+            shape.push_back(depth);
+        if (height > 1)
+            shape.push_back(height);
+        shape.push_back(width);
+        if (channelCount > 1)
+            shape.push_back(channelCount);
+
+        return pybind11::ndarray<pybind11::pytorch>(
+            deviceData, shape.size(), shape.data(), owner, nullptr, *dtype, pybind11::device::cuda::value
+        );
+    }
+    else
+    {
+        pybind11::size_t shape[1] = {subresourceSize};
+        return pybind11::ndarray<pybind11::pytorch>(
+            deviceData, 1, shape, owner, nullptr, pybind11::dtype<uint8_t>(), pybind11::device::cuda::value
+        );
+    }
+}
+#endif
+
 FALCOR_SCRIPT_BINDING(Texture)
 {
     using namespace pybind11::literals;
@@ -843,5 +907,9 @@ FALCOR_SCRIPT_BINDING(Texture)
 
     texture.def("to_numpy", texture_to_numpy, "mip_level"_a = 0, "array_slice"_a = 0);
     texture.def("from_numpy", texture_from_numpy, "data"_a, "mip_level"_a = 0, "array_slice"_a = 0);
+
+#if FALCOR_HAS_CUDA
+    texture.def("to_torch", texture_to_torch, "mip_level"_a = 0, "array_slice"_a = 0);
+#endif
 }
 } // namespace Falcor
