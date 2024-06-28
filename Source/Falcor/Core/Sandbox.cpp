@@ -136,6 +136,7 @@ void Sandbox::resizeFrameBuffer(uint32_t width, uint32_t height)
 void Sandbox::loadScene(const std::filesystem::path& path, SceneBuilder::Flags buildFlags)
 {
     mpScene = SceneBuilder(mpDevice, path, Settings(), buildFlags).getScene();
+    mpScene->setCameraAspectRatio(mpTargetFBO->getWidth() / (float)mpTargetFBO->getHeight());
 
     if (mpRenderGraph)
         mpRenderGraph->setScene(mpScene);
@@ -582,6 +583,36 @@ void Sandbox::captureOutput(const std::filesystem::path& path, uint32_t outputIn
     }
 }
 
+std::map<std::string, pybind11::ndarray<pybind11::numpy>> Sandbox::getOutputsNumpy() const
+{
+    std::map<std::string, pybind11::ndarray<pybind11::numpy>> outputs;
+
+    auto outputCount = mpRenderGraph->getOutputCount();
+    for (auto i = 0; i < outputCount; i++)
+    {
+        const std::string outputName = mpRenderGraph->getOutputName(i);
+        const ref<Texture> pOutput = mpRenderGraph->getOutput(outputName)->asTexture();
+        if (!pOutput)
+            FALCOR_THROW("Graph output {} is not a texture", outputName);
+
+        size_t channel = getFormatChannelCount(pOutput->getFormat());
+        std::vector<size_t> shape = {pOutput->getHeight(), pOutput->getWidth(), channel};
+
+        Texture::SubresourceLayout layout = pOutput->getSubresourceLayout(0);
+        size_t subresourceSize = layout.getTotalByteSize();
+        void* cpuData = new uint8_t[subresourceSize];
+        pOutput->getSubresourceBlob(0, cpuData, subresourceSize);
+
+        pybind11::capsule owner(cpuData, [](void* p) noexcept { delete[] reinterpret_cast<uint8_t*>(p); });
+
+        outputs[outputName] = pybind11::ndarray<pybind11::numpy>(
+            cpuData, shape.size(), shape.data(), owner, nullptr, dataTypeToDtype(DataType::float32), pybind11::device::cpu::value
+        );
+    }
+
+    return outputs;
+}
+
 std::map<std::string, pybind11::ndarray<pybind11::pytorch>> Sandbox::getOutputsTorch() const {
     std::map<std::string, pybind11::ndarray<pybind11::pytorch>> outputs;
 
@@ -672,7 +703,8 @@ FALCOR_SCRIPT_BINDING(Sandbox)
     sandbox.def("create_render_graph", &Sandbox::createRenderGraph, "name"_a = "");
     sandbox.def("load_render_graph", &Sandbox::loadRenderGraph, "path"_a);
     sandbox.def("capture_output", &Sandbox::captureOutput, "path"_a, "output_index"_a = uint32_t(0)); // PYTHONDEPRECATED
-    sandbox.def("get_outputs_torch", &Sandbox::getOutputsTorch); 
+    sandbox.def("get_outputs_torch", &Sandbox::getOutputsTorch);
+    sandbox.def("get_outputs_numpy", &Sandbox::getOutputsNumpy); 
     sandbox.def_property_readonly("profiler", [](Sandbox* pTestbed) { return pTestbed->getDevice()->getProfiler(); });
 
     sandbox.def_property_readonly("device", &Sandbox::getDevice);

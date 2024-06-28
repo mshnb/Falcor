@@ -1052,6 +1052,22 @@ namespace Falcor
     }
 
     // Scene graph
+    void SceneBuilder::setNodeAnimated(NodeID nodeID, bool isAnimated)
+    {
+        FALCOR_ASSERT(nodeID.get() >= 0 && nodeID.get() < mSceneGraph.size());
+        for (auto& meshID : mSceneGraph[nodeID.get()].meshes)
+        {
+            mMeshes[meshID.get()].isAnimated = isAnimated;
+        }
+    }
+
+    void SceneBuilder::setParentNode(NodeID nodeID, NodeID parentNodeID)
+    {
+        FALCOR_ASSERT(nodeID.get() >= 0 && nodeID.get() < mSceneGraph.size(), "Invalid node ID");
+        FALCOR_ASSERT(parentNodeID.isValid() && parentNodeID.get() < mSceneGraph.size(), "Invalid parent node ID");
+        mSceneGraph[nodeID.get()].parent = parentNodeID;
+        mSceneGraph[parentNodeID.get()].children.push_back(nodeID);
+    }
 
     NodeID SceneBuilder::addNode(const Node& node)
     {
@@ -2987,5 +3003,8 @@ namespace Falcor
 
         sceneBuilder.def("getSettings", static_cast<Settings&(SceneBuilder::*)()>(&SceneBuilder::getSettings), pybind11::return_value_policy::reference);
         sceneBuilder.def_property_readonly("assetResolver", &SceneBuilder::getAssetResolver, pybind11::return_value_policy::reference);
+
+        sceneBuilder.def("setNodeAnimated", &SceneBuilder::setNodeAnimated);
+        sceneBuilder.def("setParentNode", &SceneBuilder::setParentNode);
     }
 }

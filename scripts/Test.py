@@ -30,5 +30,19 @@ def render_graph_TestPathTracer():
     return g
 
 TestPathTracer = render_graph_TestPathTracer()
-try: m.addGraph(TestPathTracer)
+try: 
+    builderFlags = SceneBuilderFlags.DontOptimizeGraph | SceneBuilderFlags.DontMergeMaterials
+    m.loadScene(r'E:\workspace\tog\neural_dielectric\scenes\cornell-box\cornell-box.pyscene', builderFlags)
+    m.addGraph(TestPathTracer)
+    # m.renderFrame()
+
+    # print('debug begin')
+    # transform = [
+    #     1, 0, 0, 0.25,
+    #     0, 1, 0, 1.25,
+    #     0, 0, 1, 0.25,
+    #     0, 0, 0, 1
+    # ]
+    # m.scene.update_node_matrix(7, transform)
+
 except NameError: None

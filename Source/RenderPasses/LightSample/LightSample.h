@@ -61,5 +61,5 @@ private:
 
     uint32_t mSampleCount;
     uint32_t mLightCount;
-
+    float mSceneRadius;
 };

@@ -60,6 +60,8 @@ RWTexture2D<uint> gTime;
 RWTexture2D<float> gDisocclusion;
 RWTexture2D<float> gMask;
 
+RWTexture2D<float4> gDiffRough;
+
 #define is_valid(name) (is_valid_##name != 0)
 
 #if !defined(COMPUTE_DEPTH_OF_FIELD) || !defined(USE_ALPHA_TEST) || !defined(LOD_MODE) || !defined(ADJUST_SHADING_NORMALS) || !defined(RAY_FLAGS)
@@ -318,7 +320,13 @@ struct GBufferRT
         if (is_valid(gDisocclusion))
             gDisocclusion[pixel] = disocclusion;
         if (is_valid(gMask))
-            gMask[pixel] = 1.0f;
+        {
+            const bool isTransmissive = (mi.getLobeTypes(sd) & (uint)LobeType::Transmission) != 0;
+            const bool isHitInvalid = hit.getType() == HitType::None;
+            gMask[pixel] = (isTransmissive || isHitInvalid) ? 0.0f : 1.0f;
+            // gMask[pixel] = 1.0f;
+        }
+
 
         if (is_valid(gLinearZ))
         {
@@ -360,6 +368,11 @@ struct GBufferRT
         if (is_valid(gVBuffer))
         {
             gVBuffer[pixel] = hit.getData();
+        }
+
+        if(is_valid(gDiffRough))
+        {
+            gDiffRough[pixel] = float4(gbuf.diffuseOpacity.xyz, gbuf.specRough.w);
         }
     }
 

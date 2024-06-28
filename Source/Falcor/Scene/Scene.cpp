@@ -1936,22 +1936,27 @@ namespace Falcor
         }
 
         // Update light collection
-        if (mpLightCollection)
+        //if (mpLightCollection)
+        //{
+        //    // If emissive material properties changed we recreate the light collection.
+        //    // This can be expensive and should be optimized by letting the light collection internally update its data structures.
+        //    if (is_set(mUpdates, UpdateFlags::EmissiveMaterialsChanged))
+        //    {
+        //        mpLightCollection = nullptr;
+        //        getLightCollection(pRenderContext);
+        //        mUpdates |= UpdateFlags::LightCollectionChanged;
+        //    }
+        //    else
+        //    {
+        //        if (mpLightCollection->update(pRenderContext))
+        //            mUpdates |= UpdateFlags::LightCollectionChanged;
+        //        mSceneStats.emissiveMemoryInBytes = mpLightCollection->getMemoryUsageInBytes();
+        //    }
+        //}
+        if (mpLightCollection && mpLightCollection->update(pRenderContext))
         {
-            // If emissive material properties changed we recreate the light collection.
-            // This can be expensive and should be optimized by letting the light collection internally update its data structures.
-            if (is_set(mUpdates, UpdateFlags::EmissiveMaterialsChanged))
-            {
-                mpLightCollection = nullptr;
-                getLightCollection(pRenderContext);
-                mUpdates |= UpdateFlags::LightCollectionChanged;
-            }
-            else
-            {
-                if (mpLightCollection->update(pRenderContext))
-                    mUpdates |= UpdateFlags::LightCollectionChanged;
-                mSceneStats.emissiveMemoryInBytes = mpLightCollection->getMemoryUsageInBytes();
-            }
+            mUpdates |= UpdateFlags::LightCollectionChanged;
+            mSceneStats.emissiveMemoryInBytes = mpLightCollection->getMemoryUsageInBytes();
         }
         else if (!mpLightCollection)
         {
@@ -4110,6 +4115,28 @@ namespace Falcor
         updateForInverseRendering(mpDevice->getRenderContext(), false, true);
     }
 
+    pybind11::dict Scene::getNameToNodeIDDict() const
+    {
+        pybind11::dict d;
+        for (uint32_t i = 0; i < mSceneGraph.size(); i++)
+            if (!mSceneGraph[i].name.empty())
+                d[mSceneGraph[i].name.c_str()] = i;
+        return d;
+    }
+
+    void Scene::updateNodeMatrix(uint32_t node_id, const std::vector<float>& matrix)
+    {
+        FALCOR_ASSERT(node_id < mSceneGraph.size());
+        FALCOR_ASSERT(matrix.size() == 16);
+
+        float4x4 mat;
+        std::memcpy(&mat, matrix.data(), 16 * sizeof(float));
+
+        Node& node = mSceneGraph[node_id];
+        node.transform = validateTransformMatrix(mat);
+        mpAnimationController->setNodeEdited(node_id);
+    }
+
     inline pybind11::dict toPython(const Scene::SceneStats& stats)
     {
         pybind11::dict d;
@@ -4358,7 +4385,7 @@ namespace Falcor
         scene.def_property_readonly(kMaterials.c_str(), &Scene::getMaterials);
         scene.def(kGetMaterial.c_str(), &Scene::getMaterial, "index"_a); // PYTHONDEPRECATED
         scene.def(kGetMaterial.c_str(), &Scene::getMaterialByName, "name"_a); // PYTHONDEPRECATED
-        scene.def("get_material", &Scene::getMaterial, "index"_a);
+        scene.def("get_material_by_id", &Scene::getMaterial, "index"_a);
         scene.def("get_material", &Scene::getMaterialByName, "name"_a);
         scene.def("addMaterial", &Scene::addMaterial, "material"_a);
         scene.def("getGeometryIDsForMaterial", [](const Scene* scene, const ref<Material>& pMaterial)
@@ -4385,5 +4412,8 @@ namespace Falcor
         scene.def("get_mesh", &Scene::getMesh, "mesh_id"_a);
         scene.def("get_mesh_vertices_and_indices", getMeshVerticesAndIndicesPython, "mesh_id"_a, "buffers"_a);
         scene.def("set_mesh_vertices", setMeshVerticesPython, "mesh_id"_a, "buffers"_a);
+
+        scene.def("update_node_matrix", &Scene::updateNodeMatrix, "node_id"_a, "matrix"_a);
+        scene.def_property_readonly("name_to_nodeID_dict", &Scene::getNameToNodeIDDict);
     }
 }

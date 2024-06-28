@@ -62,6 +62,9 @@ const ChannelList kGBufferExtraChannels = {
     { "time",                       "gTime",                        "Per-pixel execution time",                                true /* optional */, ResourceFormat::R32Uint      },
     { "disocclusion",               "gDisocclusion",                "Disocclusion mask",                                       true /* optional */, ResourceFormat::R32Float     },
     { "mask",                       "gMask",                        "Mask",                                                    true /* optional */, ResourceFormat::R32Float     },
+
+    { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
+
     // clang-format on
 };
 } // namespace

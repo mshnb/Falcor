@@ -134,7 +134,7 @@ private:
         TexLODMode  primaryLodMode = TexLODMode::Mip0;          ///< Use filtered texture lookups at the primary hit.
 
         // Scheduling parameters
-        bool        useSER = true;                              ///< Enable SER (Shader Execution Reordering).
+        bool        useSER = false;                              ///< Enable SER (Shader Execution Reordering).
 
         // Output parameters
         ColorFormat colorFormat = ColorFormat::LogLuvHDR;       ///< Color format used for internal per-sample color and denoiser buffers.

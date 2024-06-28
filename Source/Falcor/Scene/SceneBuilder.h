@@ -639,6 +639,10 @@ namespace Falcor
         */
         NodeID addNode(const Node& node);
 
+        void setNodeAnimated(NodeID nodeID, bool isAnimated);
+
+        void setParentNode(NodeID nodeID, NodeID parentNodeID);
+
         /** Get how many nodes have been added to the scene graph.
             \return The node count.
         */

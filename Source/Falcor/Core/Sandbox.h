@@ -113,6 +113,7 @@ public:
     bool shouldClose() const { return mShouldClose || (mpWindow && mpWindow->shouldClose()); }
 
     std::map<std::string, pybind11::ndarray<pybind11::pytorch>> getOutputsTorch() const;
+    std::map<std::string, pybind11::ndarray<pybind11::numpy>> getOutputsNumpy() const;
 
 private:
     // Implementation of Window::ICallbacks

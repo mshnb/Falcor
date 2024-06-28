@@ -28,6 +28,7 @@
 #include "LightSample.h"
 #include "RenderGraph/RenderPassHelpers.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
+#include "Utils/Math/AABB.h"
 
 namespace
 {
@@ -51,6 +52,8 @@ extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registr
 
 LightSample::LightSample(ref<Device> pDevice, const Properties& props) : RenderPass(pDevice)
 {
+    mLightCount = 0;
+
     // Deserialize pass from dictionary.
     for (const auto& [key, value] : props)
     {
@@ -111,6 +114,8 @@ void LightSample::execute(RenderContext* pRenderContext, const RenderData& rende
         }
     }
 
+    var["sceneRadius"] = mSceneRadius;
+
     var["gPosW"] = renderData.getTexture("posW");
     var["gNormW"] = renderData.getTexture("normW");
     var["gEmissive"] = renderData.getTexture("emissive");
@@ -127,14 +132,15 @@ void LightSample::setScene(RenderContext* pRenderContext, const ref<Scene>& pSce
 {
     mpScene = pScene;
 
+    mSceneRadius = pScene->getSceneBounds().radius();
+
     ref<const LightCollection> emissiveLight = pScene->getLightCollection(pRenderContext);
     uint32_t lightCount = emissiveLight->getMeshLights().size();
 
     if (pScene->getEnvMap() != nullptr)
         lightCount += 1u;
 
-    if (mLightCount > lightCount)
-        mLightCount = lightCount;
+    mLightCount = lightCount;
 
     //printf("debug.LightSample.setScene mLightCount=%u\n", mLightCount);
 }

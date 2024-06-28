@@ -1121,6 +1121,10 @@ namespace Falcor
 
         uint64_t getMemoryUsageInBytes() const { return getSceneStats().getTotalMemory(); }
 
+        pybind11::dict getNameToNodeIDDict() const;
+
+        void updateNodeMatrix(uint32_t node_id, const std::vector<float>& matrix);
+
     private:
         friend class AnimationController;
         friend class AnimatedVertexCache;

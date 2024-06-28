@@ -17,6 +17,8 @@ RWTexture2D<float4> gEmissive;
 
 uniform EnvMapSampler envS;
 
+uniform float sceneRadius;
+
 struct LightSample
 {
     float3 position;
@@ -202,7 +204,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
         EnvMapSample lightSample;
 
         envS.sample(sampleNext2D(sg), lightSample);
-        gPosW[uint2(threadID.x ,index)] = float4(lightSample.dir,1.0);
+        gPosW[uint2(threadID.x ,index)] = float4(sceneRadius * lightSample.dir,1.0);
         gNormW[uint2(threadID.x ,index)] = float4(-lightSample.dir,1.0);
         gEmissive[uint2(threadID.x  ,index)] = float4(lightSample.Le,1.0);
     }
