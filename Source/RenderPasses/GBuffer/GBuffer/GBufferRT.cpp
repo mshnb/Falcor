@@ -37,9 +37,10 @@ const std::string kProgramComputeFile = "RenderPasses/GBuffer/GBuffer/GBufferRT.
 // Scripting options.
 const char kUseTraceRayInline[] = "useTraceRayInline";
 const char kUseDOF[] = "useDOF";
+const char kMaxBounces[] = "maxBounces";
 
 // Ray tracing settings that affect the traversal stack size. Set as small as possible.
-const uint32_t kMaxPayloadSizeBytes = 4;
+const uint32_t kMaxPayloadSizeBytes = 64;
 const uint32_t kMaxRecursionDepth = 1;
 
 // Scripting options
@@ -64,6 +65,8 @@ const ChannelList kGBufferExtraChannels = {
     { "mask",                       "gMask",                        "Mask",                                                    true /* optional */, ResourceFormat::R32Float     },
 
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractPosW",                "gRefractPosW",                 "Second refractive position in world space",               true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractDirW",                "gRefractDirW",                 "Second refractive direction in world space",              true /* optional */, ResourceFormat::RGBA32Float  },
 
     // clang-format on
 };
@@ -212,6 +215,8 @@ void GBufferRT::parseProperties(const Properties& props)
             mUseTraceRayInline = value;
         else if (key == kUseDOF)
             mUseDOF = value;
+        else if (key == kMaxBounces)
+            mMaxBounces = value;
         // TODO: Check for unparsed fields, including those parsed in base classes.
     }
 }
@@ -329,6 +334,7 @@ DefineList GBufferRT::getShaderDefines(const RenderData& renderData) const
     defines.add("USE_ALPHA_TEST", mUseAlphaTest ? "1" : "0");
     defines.add("LOD_MODE", std::to_string((uint32_t)mLODMode));
     defines.add("ADJUST_SHADING_NORMALS", mAdjustShadingNormals ? "1" : "0");
+    defines.add("MAX_BOUNCES", std::to_string(mMaxBounces));
 
     // Setup ray flags.
     RayFlags rayFlags = RayFlags::None;

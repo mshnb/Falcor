@@ -82,4 +82,5 @@ private:
     } mRaytrace;
 
     ref<ComputePass> mpComputePass;
+    uint32_t mMaxBounces = 2;
 };

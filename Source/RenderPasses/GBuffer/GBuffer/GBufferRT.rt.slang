@@ -33,11 +33,11 @@ import GBufferRT;
 
 ConstantBuffer<GBufferRT> gGBufferRT;
 
-struct RayData
-{
-    // TODO: Passing in an empty payload struct doesn't work. Declare a dummy variable so that the compiler doesn't remove the declaration.
-    int dummy;
-};
+//struct RayData
+//{
+//    // TODO: Passing in an empty payload struct doesn't work. Declare a dummy variable so that the compiler doesn't remove the declaration.
+//    int dummy;
+//};
 
 //
 // Shader entry point for miss shader.
@@ -48,7 +48,7 @@ void miss(inout RayData rayData)
 {
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
-    gGBufferRT.writeMiss(launchIndex, WorldRayOrigin(), WorldRayDirection());
+    gGBufferRT.writeMiss(launchIndex, WorldRayOrigin(), WorldRayDirection(), rayData);
 }
 
 //
@@ -79,7 +79,8 @@ void closestHit(inout RayData rayData, BuiltInTriangleIntersectionAttributes att
 
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
-    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(triangleHit), RayTCurrent());
+    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(triangleHit), RayTCurrent(), rayData);
+    rayData.bounce++;
 }
 
 //
@@ -109,7 +110,8 @@ void displacedTriangleMeshClosestHit(inout RayData rayData, DisplacedTriangleMes
 
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
-    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(displacedTriangleHit), RayTCurrent());
+    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(displacedTriangleHit), RayTCurrent(), rayData);
+    rayData.bounce++;
 }
 
 //
@@ -138,7 +140,8 @@ void curveClosestHit(inout RayData hitData, CurveIntersector::Attribs attribs)
 
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
-    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(curveHit), RayTCurrent());
+    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(curveHit), RayTCurrent(), hitData);
+    hitData.bounce++;
 }
 
 
@@ -168,7 +171,8 @@ void sdfGridClosestHit(inout RayData hitData, SDFGridHitData sdfGridHitData)
 
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
-    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(sdfGridHit), RayTCurrent());
+    gGBufferRT.writeHit(launchIndex, WorldRayOrigin(), WorldRayDirection(), HitInfo(sdfGridHit), RayTCurrent(), hitData);
+    hitData.bounce++;
 }
 
 //
@@ -184,20 +188,36 @@ void rayGen()
     gGBufferRT.beginTime(timer);
 
     // Trace ray.
-    const Ray ray = gGBufferRT.generateRay(launchIndex);
+    Ray ray = gGBufferRT.generateRay(launchIndex);
     RayData rayData;
-    TraceRay(
-        gScene.rtAccel,
-        GBufferRT::kRayFlags,
-        0xff /* instanceInclusionMask */,
-        0 /* hitIdx */,
-        rayTypeCount,
-        0 /* missIdx */,
-        ray.toRayDesc(),
-        rayData
-    );
+    for (int i = 0; i < MAX_BOUNCES; i++)
+    {
+        if (rayData.exit)
+            break;
 
-    gGBufferRT.writeAux(launchIndex, ray);
+        if (i > 0)
+        {
+            ray.origin = rayData.hitPosW;
+            ray.dir = rayData.nextDirW;
+            ray.tMin = 1e-4f;
+            ray.tMax = 1e30f;
+        }
+
+        // Trace ray.
+        TraceRay(
+            gScene.rtAccel,
+            GBufferRT::kRayFlags,
+            0xff /* instanceInclusionMask */,
+            0 /* hitIdx */,
+            rayTypeCount,
+            0 /* missIdx */,
+            ray.toRayDesc(),
+            rayData
+        );
+
+        if (i == 0)
+            gGBufferRT.writeAux(launchIndex, ray);
+    }
 
     gGBufferRT.endTime(launchIndex, timer);
 }
