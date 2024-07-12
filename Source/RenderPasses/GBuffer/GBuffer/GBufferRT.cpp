@@ -68,6 +68,8 @@ const ChannelList kGBufferExtraChannels = {
     { "refractPosW",                "gRefractPosW",                 "Second refractive position in world space",               true /* optional */, ResourceFormat::RGBA32Float  },
     { "refractDirW",                "gRefractDirW",                 "Second refractive direction in world space",              true /* optional */, ResourceFormat::RGBA32Float  },
 
+    { "finalPosW",                  "gFinalPosW",                   "Final hit position in world space",                       true /* optional */, ResourceFormat::RGBA32Float  },
+
     // clang-format on
 };
 } // namespace
@@ -180,6 +182,10 @@ void GBufferRT::renderUI(Gui::Widgets& widget)
     {
         mOptionsChanged = true;
     }
+
+    mOptionsChanged |= widget.var("maxBounces", mMaxBounces, 1u, 3u);
+    //maxBounces
+
     widget.tooltip(
         "This option enables stochastic depth-of-field when the camera's aperture radius is nonzero. "
         "Disable it to force the use of a pinhole camera.",

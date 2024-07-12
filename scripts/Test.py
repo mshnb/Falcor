@@ -9,7 +9,7 @@ def render_graph_TestPathTracer():
     LightSample = createPass("LightSample", {'lightCount': 2, 'sampleCount': 256})
     g.addPass(LightSample, "LightSample")
 
-    GBufferRT = createPass("GBufferRT", {'samplePattern': 'Stratified', 'sampleCount': 16})
+    GBufferRT = createPass("GBufferRT", {'maxBounces': 2, 'samplePattern': 'Stratified', 'sampleCount': 16})
     g.addPass(GBufferRT, "GBufferRT")
 
     AccumulatePass = createPass("AccumulatePass", {'enabled': True, 'precisionMode': 'Single'})
@@ -22,6 +22,11 @@ def render_graph_TestPathTracer():
 
     g.markOutput("GBufferRT.posW")
     g.markOutput("GBufferRT.normW")
+    g.markOutput("GBufferRT.refractPosW")
+    g.markOutput("GBufferRT.refractDirW")
+    g.markOutput("GBufferRT.finalPosW")
+    g.markOutput("GBufferRT.mask")
+    g.markOutput("GBufferRT.viewW")
 
     g.markOutput("LightSample.posW")
     g.markOutput("LightSample.normW")
@@ -32,7 +37,7 @@ def render_graph_TestPathTracer():
 TestPathTracer = render_graph_TestPathTracer()
 try: 
     builderFlags = SceneBuilderFlags.DontOptimizeGraph | SceneBuilderFlags.DontMergeMaterials
-    m.loadScene(r'E:\workspace\tog\neural_dielectric\scenes\cornell-box\cornell-box.pyscene', builderFlags)
+    m.loadScene(r'E:\workspace\tog\neural_dielectric\scenes\cornell-bunny\scene.pyscene', builderFlags)
     m.addGraph(TestPathTracer)
     # m.renderFrame()
 
