@@ -350,6 +350,8 @@ struct GBufferRT
                 gEmissive[pixel] = gbuf.emissive;
             if (is_valid(gDisocclusion))
                 gDisocclusion[pixel] = disocclusion;
+            if (is_valid(gMask))
+                gMask[pixel] = 0.f;
 
             if (is_valid(gLinearZ))
             {

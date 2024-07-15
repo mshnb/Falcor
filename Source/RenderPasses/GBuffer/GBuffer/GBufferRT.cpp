@@ -184,7 +184,6 @@ void GBufferRT::renderUI(Gui::Widgets& widget)
     }
 
     mOptionsChanged |= widget.var("maxBounces", mMaxBounces, 1u, 3u);
-    //maxBounces
 
     widget.tooltip(
         "This option enables stochastic depth-of-field when the camera's aperture radius is nonzero. "
