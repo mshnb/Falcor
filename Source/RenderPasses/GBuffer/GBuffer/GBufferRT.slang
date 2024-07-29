@@ -421,7 +421,10 @@ struct GBufferRT
                     gMask[pixel] = 1.f;
 
                 if (wi.z < 0)
+                {
                     eta = 1 / eta;
+                    cosThetaT = -cosThetaT;
+                }
 
                 rayData.hitPosW = sd.computeRayOrigin();
                 rayData.nextDirW = normalize(sd.frame.fromLocal(float3(-wi.x * eta, -wi.y * eta, -cosThetaT)));
