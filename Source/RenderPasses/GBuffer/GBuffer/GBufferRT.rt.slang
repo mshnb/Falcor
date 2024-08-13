@@ -46,6 +46,9 @@ ConstantBuffer<GBufferRT> gGBufferRT;
 [shader("miss")]
 void miss(inout RayData rayData)
 {
+    if (rayData.bounce > 0)
+        return;
+
     // Write GBuffer data.
     uint2 launchIndex = DispatchRaysIndex().xy;
     gGBufferRT.writeMiss(launchIndex, WorldRayOrigin(), WorldRayDirection(), rayData);
