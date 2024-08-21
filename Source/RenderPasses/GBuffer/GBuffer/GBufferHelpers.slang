@@ -46,6 +46,7 @@ struct GBufferData
     float4 guideNormalW;
     float2 texC;
     uint4 mtlData;
+    float4 baseColorMetallic;
 
     // Legacy channels
     float4 diffuseOpacity;
@@ -71,6 +72,7 @@ GBufferData prepareGBufferData(const ShadingData sd, const VertexData v, const I
     gbuf.guideNormalW = float4(bsdfProperties.guideNormal, 0.f);
     gbuf.texC = sd.uv;
     gbuf.mtlData = uint4(sd.materialID, sd.mtl.packedData.x, sd.mtl.packedData.y, mi.getLobeTypes(sd));
+    gbuf.baseColorMetallic = float4(bsdfProperties.baseColor, bsdfProperties.metallic);
 
     // Setup legacy material channels.
     gbuf.diffuseOpacity = float4(bsdfProperties.diffuseReflectionAlbedo, 1.f);

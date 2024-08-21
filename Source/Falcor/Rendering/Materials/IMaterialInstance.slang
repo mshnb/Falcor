@@ -82,6 +82,8 @@ struct BSDFProperties
     float   roughness;                      ///< Surface roughness on a perceptually linear scale, where 0.0 = perfectly smooth and 1.0 = maximum roughness.
     float3  guideNormal;                    ///< Representative shading normal in world space that includes effects of normal mapping. Useful as guide for denoisers.
     uint    flags;                          ///< Flags storing additional properties.
+    float3 baseColor;
+    float metallic;
 
     // Approximate directional-hemispherical reflectance/transmittance of the BSDF (black-sky albedo).
     // The exact values are given by the integrals of the BSDF over wo given an incident direction wi.

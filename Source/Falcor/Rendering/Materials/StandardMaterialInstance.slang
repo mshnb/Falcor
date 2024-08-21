@@ -133,6 +133,7 @@ struct StandardMaterialInstance : MaterialInstanceBase, IMaterialInstance
 
         p.guideNormal = sf.N;
         p.emission = emission;
+        p.metallic = data.metallic;
 
         // Clamp roughness so it's representable of what is actually used in StandardBSDF.
         // Roughness^2 below kMinGGXAlpha is used to indicate perfectly smooth surfaces.
@@ -148,6 +149,9 @@ struct StandardMaterialInstance : MaterialInstanceBase, IMaterialInstance
 
         // Pass on our specular reflectance field unmodified.
         p.specularReflectance = data.specular;
+
+        // KenZ: this is a hack to get baseColor, there is little bias actually
+        p.baseColor = data.specular + data.diffuse;
 
         if (data.diffuseTransmission > 0.f || data.specularTransmission > 0.f) p.flags |= (uint)BSDFProperties::Flags::IsTransmissive;
 
