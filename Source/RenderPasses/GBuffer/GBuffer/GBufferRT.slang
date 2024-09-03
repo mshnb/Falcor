@@ -63,6 +63,7 @@ RWTexture2D<float> gDisocclusion;
 RWTexture2D<float> gMask;
 
 RWTexture2D<float4> gDiffRough;
+RWTexture2D<float4> gReflectDirW;
 
 RWTexture2D<float4> gFirstPosW;
 RWTexture2D<float4> gFirstNormW;
@@ -361,12 +362,6 @@ struct GBufferRT
             if (is_valid(gDisocclusion))
                 gDisocclusion[pixel] = disocclusion;
 
-            if (is_valid(gMask))
-            {
-                bool isEmissive = any(bsdfProperties.emission > 0.f);
-                gMask[pixel] = isEmissive ? 0.f : 1.f;
-            }
-
             if (is_valid(gLinearZ))
             {
                 float4 curPosH = mul(gScene.camera.data.viewProjMatNoJitter, float4(sd.posW, 1.f));
@@ -411,7 +406,21 @@ struct GBufferRT
 
             if(is_valid(gDiffRough))
             {
-                gDiffRough[pixel] = float4(gbuf.diffuseOpacity.xyz, gbuf.specRough.w);
+                gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+            }
+
+            const bool isDiffuse = (lobeType & (uint)LobeType::Diffuse) != 0;
+            if (is_valid(gMask))
+            {
+                // bool isEmissive = any(bsdfProperties.emission > 0.f);
+                gMask[pixel] = !isDiffuse ? 1.f : 0.f;
+            }
+
+            if (!isDiffuse && is_valid(gReflectDirW))
+            {
+                float3 wi = sd.frame.toLocal(-rayDir);
+                float3 wo = float3(-wi.x, -wi.y, wi.z);
+                gReflectDirW[pixel] = float4(sd.frame.fromLocal(wo), 1.f);
             }
         }
 
@@ -527,6 +536,9 @@ struct GBufferRT
             gFirstDiffRough[pixel] = {};
         if (is_valid(gFirstViewW))
             gFirstViewW[pixel] = {};
+
+        if (is_valid(gReflectDirW))
+            gReflectDirW[pixel] = {};
     }
 
     void writeAux(uint2 pixel, const Ray ray)

@@ -65,6 +65,8 @@ const ChannelList kGBufferExtraChannels = {
     { "mask",                       "gMask",                        "Mask",                                                    true /* optional */, ResourceFormat::R32Float     },
 
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
+    { "reflectDirW",                "gReflectDirW",                 "Reflective direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
+
     //{ "refractPosW",                "gRefractPosW",                 "Second refractive position in world space",               true /* optional */, ResourceFormat::RGBA32Float  },
     //{ "refractDirW",                "gRefractDirW",                 "Second refractive direction in world space",              true /* optional */, ResourceFormat::RGBA32Float  },
 
