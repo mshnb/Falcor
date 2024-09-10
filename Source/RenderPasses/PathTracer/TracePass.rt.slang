@@ -474,6 +474,8 @@ struct Scheduler
             return;
         }
 
+        gPathTracer.writeDirectOutput(path);
+
         // Trace path.
         while (path.isActive())
         {

@@ -78,6 +78,9 @@ namespace
     const std::string kOutputNRDDeltaTransmissionPosW = "nrdDeltaTransmissionPosW";
     const std::string kOutputNRDResidualRadianceHitDist = "nrdResidualRadianceHitDist";
 
+    //const std::string kOutputDirectColor = "directColor";
+    const std::string kOutputDirect = "direct";
+
     const Falcor::ChannelList kOutputChannels =
     {
         { kOutputColor,                                     "",     "Output color (linear)", true /* optional */, ResourceFormat::RGBA32Float },
@@ -107,6 +110,9 @@ namespace
         { kOutputNRDDeltaTransmissionPathLength,            "",     "Output delta transmission path length", true /* optional */, ResourceFormat::R16Float },
         { kOutputNRDDeltaTransmissionPosW,                  "",     "Output delta transmission position", true /* optional */, ResourceFormat::RGBA32Float },
         { kOutputNRDResidualRadianceHitDist,                "",     "Output residual color (linear) and hit distance", true /* optional */, ResourceFormat::RGBA32Float },
+
+        //{ kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float },
+        { kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float }
     };
 
     // Scripting options.
@@ -1112,7 +1118,8 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     var["viewDir"] = pViewDir; // Can be nullptr
     var["sampleCount"] = pSampleCount; // Can be nullptr
     var["outputColor"] = renderData.getTexture(kOutputColor);
-
+    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    
     if (useLightSampling && mpEmissiveSampler)
     {
         // TODO: Do we have to bind this every frame?
@@ -1150,6 +1157,12 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
     if (mpScene == nullptr || !mEnabled)
     {
         pRenderContext->clearUAV(pOutputColor->getUAV().get(), float4(0.f));
+
+        if (renderData[kOutputDirect] != nullptr)
+        {
+            const auto& pOutputDirect = renderData.getTexture(kOutputDirect);
+            pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
+        }
 
         // Set refresh flag if changes that affect the output have occured.
         // This is needed to ensure other passes get notified when the path tracer is enabled/disabled.
@@ -1226,6 +1239,9 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
         || renderData[kOutputNRDDeltaTransmissionPathLength] != nullptr
         || renderData[kOutputNRDDeltaTransmissionPosW] != nullptr;
     if (mOutputNRDAdditionalData != prevOutputNRDAdditionalData) mRecompile = true;
+
+    // Check if NEGL buffers should be generated.
+    mOutputNEGLData = renderData[kOutputDirect] != nullptr;
 
     // Enable pixel stats if rayCount or pathLength outputs are connected.
     if (renderData[kOutputRayCount] != nullptr || renderData[kOutputPathLength] != nullptr)
@@ -1314,6 +1330,7 @@ void PathTracer::tracePass(RenderContext* pRenderContext, const RenderData& rend
     tracePass.pProgram->addDefine("OUTPUT_GUIDE_DATA", mOutputGuideData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_DATA", mOutputNRDData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_ADDITIONAL_DATA", mOutputNRDAdditionalData ? "1" : "0");
+    tracePass.pProgram->addDefine("OUTPUT_NEGL_DATA", mOutputNEGLData ? "1" : "0");
 
     // Bind global resources.
     auto var = tracePass.pVars->getRootVar();
@@ -1363,6 +1380,9 @@ void PathTracer::resolvePass(RenderContext* pRenderContext, const RenderData& re
     var["outputNRDDeltaReflectionRadianceHitDist"] = renderData.getTexture(kOutputNRDDeltaReflectionRadianceHitDist);
     var["outputNRDDeltaTransmissionRadianceHitDist"] = renderData.getTexture(kOutputNRDDeltaTransmissionRadianceHitDist);
     var["outputNRDResidualRadianceHitDist"] = renderData.getTexture(kOutputNRDResidualRadianceHitDist);
+
+    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    //var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
 
     if (mVarsChanged)
     {
@@ -1434,6 +1454,7 @@ DefineList PathTracer::StaticParams::getDefines(const PathTracer& owner) const
     defines.add("OUTPUT_GUIDE_DATA", "0");
     defines.add("OUTPUT_NRD_DATA", "0");
     defines.add("OUTPUT_NRD_ADDITIONAL_DATA", "0");
+    defines.add("OUTPUT_NEGL_DATA", "0");
 
     return defines;
 }

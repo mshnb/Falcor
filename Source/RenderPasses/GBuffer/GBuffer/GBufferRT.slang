@@ -416,11 +416,16 @@ struct GBufferRT
                 gMask[pixel] = !isDiffuse ? 1.f : 0.f;
             }
 
-            if (!isDiffuse && is_valid(gReflectDirW))
+            if (is_valid(gReflectDirW))
             {
-                float3 wi = sd.frame.toLocal(-rayDir);
-                float3 wo = float3(-wi.x, -wi.y, wi.z);
-                gReflectDirW[pixel] = float4(sd.frame.fromLocal(wo), 1.f);
+                if (!isDiffuse )
+                {
+                    float3 wi = sd.frame.toLocal(-rayDir);
+                    float3 wo = float3(-wi.x, -wi.y, wi.z);
+                    gReflectDirW[pixel] = float4(normalize(sd.frame.fromLocal(wo)), 1.f);
+                }
+                else
+                    gReflectDirW[pixel] = {};
             }
         }
 
@@ -537,6 +542,8 @@ struct GBufferRT
         if (is_valid(gFirstViewW))
             gFirstViewW[pixel] = {};
 
+        if (is_valid(gDiffRough))
+            gDiffRough[pixel] = {};
         if (is_valid(gReflectDirW))
             gReflectDirW[pixel] = {};
     }
