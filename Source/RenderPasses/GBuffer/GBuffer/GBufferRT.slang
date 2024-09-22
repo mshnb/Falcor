@@ -64,11 +64,12 @@ RWTexture2D<float> gMask;
 
 RWTexture2D<float4> gDiffRough;
 RWTexture2D<float4> gReflectDirW;
+RWTexture2D<float4> gReflectPosW;
 
-RWTexture2D<float4> gFirstPosW;
-RWTexture2D<float4> gFirstNormW;
-RWTexture2D<float4> gFirstViewW;
-RWTexture2D<float4> gFirstDiffRough;
+// RWTexture2D<float4> gFirstPosW;
+// RWTexture2D<float4> gFirstNormW;
+// RWTexture2D<float4> gFirstViewW;
+// RWTexture2D<float4> gFirstDiffRough;
 // RWTexture2D<float4> gFirstEmissive;
 
 #define is_valid(name) (is_valid_##name != 0)
@@ -200,14 +201,14 @@ struct GBufferRT
 
     Ray generateRay(uint2 pixel)
     {
-        if (is_valid(gFirstPosW))
-            gFirstPosW[pixel] = {};
-        if (is_valid(gFirstNormW))
-            gFirstNormW[pixel] = {};
-        if (is_valid(gFirstViewW))
-            gFirstViewW[pixel] = {};
-        if (is_valid(gFirstDiffRough))
-            gFirstDiffRough[pixel] = {};
+        // if (is_valid(gFirstPosW))
+        //     gFirstPosW[pixel] = {};
+        // if (is_valid(gFirstNormW))
+        //     gFirstNormW[pixel] = {};
+        // if (is_valid(gFirstViewW))
+        //     gFirstViewW[pixel] = {};
+        // if (is_valid(gFirstDiffRough))
+        //     gFirstDiffRough[pixel] = {};
 
         if (kComputeDepthOfField)
         {
@@ -418,59 +419,73 @@ struct GBufferRT
 
             if (is_valid(gReflectDirW))
             {
-                if (!isDiffuse )
+                if (!isDiffuse)
                 {
                     float3 wi = sd.frame.toLocal(-rayDir);
                     float3 wo = float3(-wi.x, -wi.y, wi.z);
-                    gReflectDirW[pixel] = float4(normalize(sd.frame.fromLocal(wo)), 1.f);
+                    rayData.hitPosW = sd.computeRayOrigin();
+                    rayData.nextDirW = normalize(sd.frame.fromLocal(wo));
+
+                    gReflectDirW[pixel] = float4(rayData.nextDirW, 1.f);
                 }
                 else
+                {
                     gReflectDirW[pixel] = {};
+                    rayData.exit = true;
+                }
             }
+
+            if (is_valid(gReflectPosW))
+                gReflectPosW[pixel] = {};
+        }
+        else if (rayData.bounce == 1)
+        {
+            if (is_valid(gReflectPosW))
+                gReflectPosW[pixel] = float4(sd.posW, 1.f);
         }
 
         // TODO: ignore the reflection in scene
-        if (isTransmissive || !isDelta)
-        {
-            if (is_valid(gFirstPosW))
-                gFirstPosW[pixel] = gbuf.posW;
-            if (is_valid(gFirstNormW))
-                gFirstNormW[pixel] = gbuf.normW;
-            if (is_valid(gFirstDiffRough))
-                gFirstDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
-            if (is_valid(gFirstViewW))
-                gFirstViewW[pixel] = float4(-rayDir, 0);
-
-            if (isTransmissive)
-            {
-                // TODO
-                float eta = 1 / 1.33f;
-                float cosThetaT;
-                float3 wi = sd.frame.toLocal(-rayDir);
-                float F = evalFresnelDielectric(eta, wi.z, cosThetaT);
-
-                bool isRefraction = cosThetaT > 0;
-                if (isRefraction)
-                {
-                    if (wi.z < 0)
-                    {
-                        eta = 1 / eta;
-                        cosThetaT = -cosThetaT;
-                    }
-        
-                    rayData.hitPosW = sd.computeRayOrigin();
-                    rayData.nextDirW = normalize(sd.frame.fromLocal(float3(-wi.x * eta, -wi.y * eta, -cosThetaT)));
-                    rayData.weight = 1.f - F; //transmissionAlbedo
-                }
-                else
-                {
-                    rayData.hitPosW = sd.computeRayOrigin();
-                    rayData.nextDirW = normalize(sd.frame.fromLocal(float3(-wi.x, -wi.y, wi.z)));
-                }
-            }
-            else
-                rayData.exit = true;
-        }
+        // if (isTransmissive || !isDelta)
+        // {
+        //     if (is_valid(gFirstPosW))
+        //         gFirstPosW[pixel] = gbuf.posW;
+        //     if (is_valid(gFirstNormW))
+        //         gFirstNormW[pixel] = gbuf.normW;
+        //     if (is_valid(gFirstDiffRough))
+        //         gFirstDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+        //     if (is_valid(gFirstViewW))
+        //         gFirstViewW[pixel] = float4(-rayDir, 0);
+        // 
+        //     if (isTransmissive)
+        //     {
+        //         // TODO
+        //         float eta = 1 / 1.33f;
+        //         float cosThetaT;
+        //         float3 wi = sd.frame.toLocal(-rayDir);
+        //         float F = evalFresnelDielectric(eta, wi.z, cosThetaT);
+        // 
+        //         bool isRefraction = cosThetaT > 0;
+        //         if (isRefraction)
+        //         {
+        //             if (wi.z < 0)
+        //             {
+        //                 eta = 1 / eta;
+        //                 cosThetaT = -cosThetaT;
+        //             }
+        // 
+        //             rayData.hitPosW = sd.computeRayOrigin();
+        //             rayData.nextDirW = normalize(sd.frame.fromLocal(float3(-wi.x * eta, -wi.y * eta, -cosThetaT)));
+        //             rayData.weight = 1.f - F; //transmissionAlbedo
+        //         }
+        //         else
+        //         {
+        //             rayData.hitPosW = sd.computeRayOrigin();
+        //             rayData.nextDirW = normalize(sd.frame.fromLocal(float3(-wi.x, -wi.y, wi.z)));
+        //         }
+        //     }
+        //     else
+        //         rayData.exit = true;
+        // }
     }
 
     float2 computeMotionVectorBackground(const uint2 pixel, const float3 rayOrigin, const float3 rayDir)
@@ -533,19 +548,21 @@ struct GBufferRT
         if (is_valid(gMask))
             gMask[pixel] = 0.0f;
 
-        if (is_valid(gFirstPosW))
-            gFirstPosW[pixel] = {};
-        if (is_valid(gFirstNormW))
-            gFirstNormW[pixel] = {};
-        if (is_valid(gFirstDiffRough))
-            gFirstDiffRough[pixel] = {};
-        if (is_valid(gFirstViewW))
-            gFirstViewW[pixel] = {};
+        // if (is_valid(gFirstPosW))
+        //     gFirstPosW[pixel] = {};
+        // if (is_valid(gFirstNormW))
+        //     gFirstNormW[pixel] = {};
+        // if (is_valid(gFirstDiffRough))
+        //     gFirstDiffRough[pixel] = {};
+        // if (is_valid(gFirstViewW))
+        //     gFirstViewW[pixel] = {};
 
         if (is_valid(gDiffRough))
             gDiffRough[pixel] = {};
         if (is_valid(gReflectDirW))
             gReflectDirW[pixel] = {};
+        if (is_valid(gReflectPosW))
+            gReflectPosW[pixel] = {};
     }
 
     void writeAux(uint2 pixel, const Ray ray)

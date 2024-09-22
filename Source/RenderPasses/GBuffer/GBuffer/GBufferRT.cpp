@@ -66,15 +66,16 @@ const ChannelList kGBufferExtraChannels = {
 
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDirW",                "gReflectDirW",                 "Reflective direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
+    { "reflectPosW",                "gReflectPosW",                 "Reflective position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
 
     //{ "refractPosW",                "gRefractPosW",                 "Second refractive position in world space",               true /* optional */, ResourceFormat::RGBA32Float  },
     //{ "refractDirW",                "gRefractDirW",                 "Second refractive direction in world space",              true /* optional */, ResourceFormat::RGBA32Float  },
 
     // first non-specular hit
-    { "firstPosW",                  "gFirstPosW",                   "Position in world space",                                 true /* optional */, ResourceFormat::RGBA32Float },
-    { "firstNormW",                 "gFirstNormW",                  "Shading normal in world space",                           true /* optional */, ResourceFormat::RGBA32Float },
-    { "firstViewW",                 "gFirstViewW",                  "View direction in world space",                           true /* optional */, ResourceFormat::RGBA32Float },
-    { "firstDiffRough",             "gFirstDiffRough",              "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float },
+    //{ "firstPosW",                  "gFirstPosW",                   "Position in world space",                                 true /* optional */, ResourceFormat::RGBA32Float },
+    //{ "firstNormW",                 "gFirstNormW",                  "Shading normal in world space",                           true /* optional */, ResourceFormat::RGBA32Float },
+    //{ "firstViewW",                 "gFirstViewW",                  "View direction in world space",                           true /* optional */, ResourceFormat::RGBA32Float },
+    //{ "firstDiffRough",             "gFirstDiffRough",              "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float },
     //{ "firstEmissive",              "gFirstEmissive",               "Emissive color",                                          true /* optional */, ResourceFormat::RGBA32Float  },
     
     //{ "finalPosW",                  "gFinalPosW",                   "Final hit position in world space",                       true /* optional */, ResourceFormat::RGBA32Float  },
