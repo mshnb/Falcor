@@ -65,6 +65,7 @@ RWTexture2D<float> gMask;
 RWTexture2D<float4> gDiffRough;
 RWTexture2D<float4> gReflectDirW;
 RWTexture2D<float4> gReflectPosW;
+RWTexture2D<float4> gReflectDiffRough;
 
 // RWTexture2D<float4> gFirstPosW;
 // RWTexture2D<float4> gFirstNormW;
@@ -109,6 +110,7 @@ struct GBufferRT
     float2 invFrameDim;
     uint frameCount;
     float screenSpacePixelSpreadAngle;
+    float sceneScale;
 
     /**
      * Ray differentials for primary hit. Code from RayTracingGems, Chapter 20.
@@ -326,8 +328,8 @@ struct GBufferRT
         const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
         const uint lobeType = mi.getLobeTypes(sd);
-        const bool isTransmissive = (lobeType & (uint)LobeType::Transmission) != 0;
-        const bool isDelta = (lobeType & (uint)LobeType::Delta) != 0;
+        // const bool isTransmissive = (lobeType & (uint)LobeType::Transmission) != 0;
+        // const bool isDelta = (lobeType & (uint)LobeType::Delta) != 0;
 
         if (rayData.bounce == 0)
         {
@@ -437,11 +439,17 @@ struct GBufferRT
 
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
+            if (is_valid(gReflectDiffRough))
+                gReflectDiffRough[pixel] = {};
+
         }
         else if (rayData.bounce == 1)
         {
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = float4(sd.posW, 1.f);
+
+            if(is_valid(gReflectDiffRough))
+                gReflectDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
         }
 
         // TODO: ignore the reflection in scene
@@ -501,68 +509,82 @@ struct GBufferRT
 
     void writeMiss(const uint2 pixel, const float3 rayOrigin, const float3 rayDir, inout RayData rayData)
     {
-        const float2 mvec = computeMotionVectorBackground(pixel, rayOrigin, rayDir);
-        const float2 octNormal = ndir_to_oct_unorm(float3(0.2215f, 0.2215f, 0.2215f)); // UE4 default value at miss
-        const float roughness = 0.f;
-        const float materialID = 0.f;
+        if (rayData.bounce == 0)
+        {
+            const float2 mvec = computeMotionVectorBackground(pixel, rayOrigin, rayDir);
+            const float2 octNormal = ndir_to_oct_unorm(float3(0.2215f, 0.2215f, 0.2215f)); // UE4 default value at miss
+            const float roughness = 0.f;
+            const float materialID = 0.f;
 
-        // GBuffer channels
-        if (is_valid(gPosW))
-            gPosW[pixel] = {};
-        if (is_valid(gNormW))
-            gNormW[pixel] = {};
-        if (is_valid(gTangentW))
-            gTangentW[pixel] = {};
-        if (is_valid(gFaceNormalW))
-            gFaceNormalW[pixel] = {};
-        if (is_valid(gTexC))
-            gTexC[pixel] = {};
-        if (is_valid(gTexGrads))
-            gTexGrads[pixel] = {};
-        if (is_valid(gMotionVector))
-            gMotionVector[pixel] = mvec;
-        if (is_valid(gMaterialData))
-            gMaterialData[pixel] = {};
+            // GBuffer channels
+            if (is_valid(gPosW))
+                gPosW[pixel] = {};
+            if (is_valid(gNormW))
+                gNormW[pixel] = {};
+            if (is_valid(gTangentW))
+                gTangentW[pixel] = {};
+            if (is_valid(gFaceNormalW))
+                gFaceNormalW[pixel] = {};
+            if (is_valid(gTexC))
+                gTexC[pixel] = {};
+            if (is_valid(gTexGrads))
+                gTexGrads[pixel] = {};
+            if (is_valid(gMotionVector))
+                gMotionVector[pixel] = mvec;
+            if (is_valid(gMaterialData))
+                gMaterialData[pixel] = {};
 
-        // GBufferRT channels
-        if (is_valid(gVBuffer))
-            gVBuffer[pixel] = {};
-        if (is_valid(gDepth))
-            gDepth[pixel] = 1.f;
-        if (is_valid(gLinearZ))
-            gLinearZ[pixel] = float2(kEnvMapDepth, 0.f);
-        if (is_valid(gMotionVectorW))
-            gMotionVectorW[pixel] = {};
-        if (is_valid(gNormalWRoughnessMaterialID))
-            gNormalWRoughnessMaterialID[pixel] = float4(octNormal, roughness, materialID);
-        if (is_valid(gGuideNormalW))
-            gGuideNormalW[pixel] = {};
-        if (is_valid(gDiffOpacity))
-            gDiffOpacity[pixel] = {};
-        if (is_valid(gSpecRough))
-            gSpecRough[pixel] = {};
-        if (is_valid(gEmissive))
-            gEmissive[pixel] = {};
-        if (is_valid(gDisocclusion))
-            gDisocclusion[pixel] = 0.f;
-        if (is_valid(gMask))
-            gMask[pixel] = 0.0f;
+            // GBufferRT channels
+            if (is_valid(gVBuffer))
+                gVBuffer[pixel] = {};
+            if (is_valid(gDepth))
+                gDepth[pixel] = 1.f;
+            if (is_valid(gLinearZ))
+                gLinearZ[pixel] = float2(kEnvMapDepth, 0.f);
+            if (is_valid(gMotionVectorW))
+                gMotionVectorW[pixel] = {};
+            if (is_valid(gNormalWRoughnessMaterialID))
+                gNormalWRoughnessMaterialID[pixel] = float4(octNormal, roughness, materialID);
+            if (is_valid(gGuideNormalW))
+                gGuideNormalW[pixel] = {};
+            if (is_valid(gDiffOpacity))
+                gDiffOpacity[pixel] = {};
+            if (is_valid(gSpecRough))
+                gSpecRough[pixel] = {};
+            if (is_valid(gEmissive))
+                gEmissive[pixel] = {};
+            if (is_valid(gDisocclusion))
+                gDisocclusion[pixel] = 0.f;
+            if (is_valid(gMask))
+                gMask[pixel] = 0.0f;
+            if (is_valid(gDiffRough))
+                gDiffRough[pixel] = {};
+            if (is_valid(gReflectDirW))
+                gReflectDirW[pixel] = {};
+            if (is_valid(gReflectDiffRough))
+                gReflectDiffRough[pixel] = {};
+            if (is_valid(gReflectPosW))
+                gReflectPosW[pixel] = {};
+        }
+        else if (rayData.bounce == 1)
+        {
+            if (is_valid(gReflectDiffRough))
+                gReflectDiffRough[pixel] = float4(0.f, 0.f, 0.f, 1.f);
 
-        // if (is_valid(gFirstPosW))
-        //     gFirstPosW[pixel] = {};
-        // if (is_valid(gFirstNormW))
-        //     gFirstNormW[pixel] = {};
-        // if (is_valid(gFirstDiffRough))
-        //     gFirstDiffRough[pixel] = {};
-        // if (is_valid(gFirstViewW))
-        //     gFirstViewW[pixel] = {};
+            if (is_valid(gReflectPosW))
+            {
+                float t_x = 1.f, t_y = 1.f, t_z = 1.f;
+                if (abs(rayDir.x) > 1e-6f)
+                    t_x = 1.f / abs(rayDir.x) - sceneScale * rayOrigin.x / rayDir.x;
+                if (abs(rayDir.y) > 1e-6f)
+                    t_y = 1.f / abs(rayDir.y) - sceneScale * rayOrigin.y / rayDir.y;
+                if (abs(rayDir.z) > 1e-6f)
+                    t_z = 1.f / abs(rayDir.z) - sceneScale * rayOrigin.z / rayDir.z;
 
-        if (is_valid(gDiffRough))
-            gDiffRough[pixel] = {};
-        if (is_valid(gReflectDirW))
-            gReflectDirW[pixel] = {};
-        if (is_valid(gReflectPosW))
-            gReflectPosW[pixel] = {};
+                float t = min(t_x, min(t_y, t_z));
+                gReflectPosW[pixel] = float4(rayOrigin + t * rayDir, 1.f);
+            }
+        }
     }
 
     void writeAux(uint2 pixel, const Ray ray)

@@ -67,6 +67,7 @@ const ChannelList kGBufferExtraChannels = {
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDirW",                "gReflectDirW",                 "Reflective direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectPosW",                "gReflectPosW",                 "Reflective position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
+    { "reflectDiffRough",           "gReflectDiffRough",            "Reflective diffuse reflection albedo and roughness",      true /* optional */, ResourceFormat::RGBA32Float  },
 
     //{ "refractPosW",                "gRefractPosW",                 "Second refractive position in world space",               true /* optional */, ResourceFormat::RGBA32Float  },
     //{ "refractDirW",                "gRefractDirW",                 "Second refractive direction in world space",              true /* optional */, ResourceFormat::RGBA32Float  },
@@ -373,6 +374,9 @@ void GBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderDat
     var["gGBufferRT"]["invFrameDim"] = mInvFrameDim;
     var["gGBufferRT"]["frameCount"] = mFrameCount;
     var["gGBufferRT"]["screenSpacePixelSpreadAngle"] = mpScene->getCamera()->computeScreenSpacePixelSpreadAngle(mFrameDim.y);
+
+    const AABB& aabb = mpScene->getSceneBounds();
+    var["gGBufferRT"]["sceneScale"] = 0.5f / (aabb.radius() + 1e-6f);
 
     // Bind output channels as UAV buffers.
     auto bind = [&](const ChannelDesc& channel)
