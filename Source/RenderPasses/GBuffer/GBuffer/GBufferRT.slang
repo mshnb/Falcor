@@ -66,12 +66,7 @@ RWTexture2D<float4> gDiffRough;
 RWTexture2D<float4> gReflectDirW;
 RWTexture2D<float4> gReflectPosW;
 RWTexture2D<float4> gReflectDiffRough;
-
-// RWTexture2D<float4> gFirstPosW;
-// RWTexture2D<float4> gFirstNormW;
-// RWTexture2D<float4> gFirstViewW;
-// RWTexture2D<float4> gFirstDiffRough;
-// RWTexture2D<float4> gFirstEmissive;
+RWTexture2D<float> gReflectDepth;
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -441,7 +436,8 @@ struct GBufferRT
                 gReflectPosW[pixel] = {};
             if (is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = {};
-
+            if (is_valid(gReflectDepth))
+                gReflectDepth[pixel] = 0.f;
         }
         else if (rayData.bounce == 1)
         {
@@ -450,6 +446,9 @@ struct GBufferRT
 
             if(is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+
+            if (is_valid(gReflectDepth))
+                gReflectDepth[pixel] = length(sd.posW - rayOrigin);
         }
 
         // TODO: ignore the reflection in scene
@@ -565,6 +564,8 @@ struct GBufferRT
                 gReflectDiffRough[pixel] = {};
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
+            if (is_valid(gReflectDepth))
+                gReflectDepth[pixel] = 0.f;
         }
         else if (rayData.bounce == 1)
         {
@@ -581,8 +582,11 @@ struct GBufferRT
                 if (abs(rayDir.z) > 1e-6f)
                     t_z = 1.f / abs(rayDir.z) - sceneScale * rayOrigin.z / rayDir.z;
 
-                float t = min(t_x, min(t_y, t_z));
+                float t = min(t_x, min(t_y, t_z)) / sceneScale;
                 gReflectPosW[pixel] = float4(rayOrigin + t * rayDir, 1.f);
+
+                if (is_valid(gReflectDepth))
+                    gReflectDepth[pixel] = t;
             }
         }
     }
