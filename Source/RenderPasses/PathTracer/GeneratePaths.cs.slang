@@ -78,7 +78,8 @@ struct PathGenerator
     NRDBuffers outputNRD;                           ///< Output NRD data.
 
     //RWTexture2D<float4> outputDirectColor;          ///< Output color buffer if kSamplesPerPixel == 1.
-    RWTexture2D<float4> outputDirect;               ///< Output color buffer if kSamplesPerPixel == 1.
+    //RWTexture2D<float4> outputDirect;               ///< Output color buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputSpecular;               ///< Output color buffer if kSamplesPerPixel == 1.
     RWTexture2D<float4> outputColor;                ///< Output color buffer if kSamplesPerPixel == 1.
 
     // Render settings that depend on the scene.
@@ -222,7 +223,8 @@ struct PathGenerator
         {
             outputColor[pixel] = float4(color, 1.f);
             //outputDirectColor[pixel] = float4(color, 1.f);
-            outputDirect[pixel] = float4(color, 1.f);
+            //outputDirect[pixel] = float4(color, 1.f);
+            outputSpecular[pixel] = float4(0.f);
         }
 
         for (uint i = 0; i < spp; i++)

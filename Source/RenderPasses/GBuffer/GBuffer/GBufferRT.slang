@@ -407,16 +407,16 @@ struct GBufferRT
                 gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
             }
 
-            const bool isDiffuse = (lobeType & (uint)LobeType::Diffuse) != 0;
+            const bool hasReflection = (lobeType & (uint)LobeType::Reflection) != 0 && (bsdfProperties.roughness < 1.f || bsdfProperties.metallic > 0.f);
             if (is_valid(gMask))
             {
                 // bool isEmissive = any(bsdfProperties.emission > 0.f);
-                gMask[pixel] = !isDiffuse ? 1.f : 0.f;
+                gMask[pixel] = hasReflection ? 1.f : 0.f;
             }
 
             if (is_valid(gReflectDirW))
             {
-                if (!isDiffuse)
+                if (hasReflection)
                 {
                     float3 wi = sd.frame.toLocal(-rayDir);
                     float3 wo = float3(-wi.x, -wi.y, wi.z);

@@ -84,8 +84,9 @@ struct PathTracer
     NRDBuffers outputNRD;                           ///< Output NRD data.
 
     static const bool kOutputNEGLData = OUTPUT_NEGL_DATA;
-    RWTexture2D<float4> outputDirect;
+    //RWTexture2D<float4> outputDirect;
     //RWTexture2D<float4> outputDirectColor;
+    RWTexture2D<float4> outputSpecular;
 
     RWTexture2D<float4> outputColor;                ///< Output color buffer if kSamplesPerPixel == 1.
 
@@ -425,6 +426,14 @@ struct PathTracer
                         path.setDeltaTransmissionPath(false);
                     }
                 }
+            }
+        }
+        else if (kOutputNEGLData)
+        {
+            if (valid && path.getVertexIndex() == 1)
+            {
+                path.setDiffusePrimaryHit(result.isLobe(LobeType::Diffuse));
+                path.setSpecularPrimaryHit(result.isLobe(LobeType::Specular));
             }
         }
 
@@ -1012,15 +1021,15 @@ struct PathTracer
                     bool visible = vq.traceVisibilityRay(ray);
                     if (visible) addToPathContribution(path, Lr);
 
-                    if (kOutputNEGLData && isPrimaryHit) {
-                        if (visible) {
-                            path.visibility = 1.f;
-                            path.direct_shading_shadow += path.thp * Lr;
-                        } else {
-                            path.visibility = 0.f;
-                        }
-                        //path.direct_shading += path.thp * Lr;
-                    }
+                    // if (kOutputNEGLData && isPrimaryHit) {
+                    //     if (visible) {
+                    //         path.visibility = 1.f;
+                    //         path.direct_shading_shadow += path.thp * Lr;
+                    //     } else {
+                    //         path.visibility = 0.f;
+                    //     }
+                    //     path.direct_shading += path.thp * Lr;
+                    // }
 
                 }
             }
@@ -1211,20 +1220,32 @@ struct PathTracer
             outputNRD.sampleRadiance[outIdx] = data;
         }
 
-        //if (kOutputNEGLData)
-        //    outputDirect[pixel] = float4(path.direct_shading_shadow, 1.f);
+        writeSpecularOutput(path);
     }
 
-    void writeDirectOutput(const PathState path)
+    // void writeDirectOutput(const PathState path)
+    // {
+    //     if (kOutputNEGLData) {
+    //         assert(!any(isnan(path.L)));
+    //         assert(kSamplesPerPixel == 1);
+    //     
+    //         const uint2 pixel = path.getPixel();
+    //         // outputDirectColor[pixel] = float4(path.direct_shading, path.visibility);
+    //         outputDirect[pixel] = float4(path.direct_shading_shadow, 1.f);
+    //     }
+    // }
+
+    void writeSpecularOutput(const PathState path)
     {
         if (kOutputNEGLData) {
             assert(!any(isnan(path.L)));
             assert(kSamplesPerPixel == 1);
         
             const uint2 pixel = path.getPixel();
-            // outputDirectColor[pixel] = float4(path.direct_shading, path.visibility);
-            outputDirect[pixel] = float4(path.direct_shading_shadow, 1.f);
+            if (path.isSpecularPrimaryHit())
+                outputSpecular[pixel] = float4(path.L, 1.f);
+            else
+                outputSpecular[pixel] = float4(0.f);
         }
     }
-
 };

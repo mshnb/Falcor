@@ -79,8 +79,9 @@ namespace
     const std::string kOutputNRDResidualRadianceHitDist = "nrdResidualRadianceHitDist";
 
     //const std::string kOutputDirectColor = "directColor";
-    const std::string kOutputDirect = "direct";
-
+    //const std::string kOutputDirect = "direct";
+    const std::string kOutputSpecular = "specular";
+  
     const Falcor::ChannelList kOutputChannels =
     {
         { kOutputColor,                                     "",     "Output color (linear)", true /* optional */, ResourceFormat::RGBA32Float },
@@ -112,7 +113,9 @@ namespace
         { kOutputNRDResidualRadianceHitDist,                "",     "Output residual color (linear) and hit distance", true /* optional */, ResourceFormat::RGBA32Float },
 
         //{ kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float },
-        { kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float }
+        //{ kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float }
+        { kOutputSpecular,                                  "",     "Output specular color (rgb channel) and specular weight (alpha channel)", true /* optional */, ResourceFormat::RGBA32Float},
+
     };
 
     // Scripting options.
@@ -1118,7 +1121,8 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     var["viewDir"] = pViewDir; // Can be nullptr
     var["sampleCount"] = pSampleCount; // Can be nullptr
     var["outputColor"] = renderData.getTexture(kOutputColor);
-    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    //var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
     
     if (useLightSampling && mpEmissiveSampler)
     {
@@ -1158,10 +1162,16 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
     {
         pRenderContext->clearUAV(pOutputColor->getUAV().get(), float4(0.f));
 
-        if (renderData[kOutputDirect] != nullptr)
+        //if (renderData[kOutputDirect] != nullptr)
+        //{
+        //    const auto& pOutputDirect = renderData.getTexture(kOutputDirect);
+        //    pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
+        //}
+
+        if (renderData[kOutputSpecular] != nullptr)
         {
-            const auto& pOutputDirect = renderData.getTexture(kOutputDirect);
-            pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
+            const auto& pOutputSpecular = renderData.getTexture(kOutputSpecular);
+            pRenderContext->clearUAV(pOutputSpecular->getUAV().get(), float4(0.f));
         }
 
         // Set refresh flag if changes that affect the output have occured.
@@ -1241,7 +1251,8 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
     if (mOutputNRDAdditionalData != prevOutputNRDAdditionalData) mRecompile = true;
 
     // Check if NEGL buffers should be generated.
-    mOutputNEGLData = renderData[kOutputDirect] != nullptr;
+    //mOutputNEGLData = renderData[kOutputDirect] != nullptr;
+    mOutputNEGLData = renderData[kOutputSpecular] != nullptr;
 
     // Enable pixel stats if rayCount or pathLength outputs are connected.
     if (renderData[kOutputRayCount] != nullptr || renderData[kOutputPathLength] != nullptr)
@@ -1381,8 +1392,9 @@ void PathTracer::resolvePass(RenderContext* pRenderContext, const RenderData& re
     var["outputNRDDeltaTransmissionRadianceHitDist"] = renderData.getTexture(kOutputNRDDeltaTransmissionRadianceHitDist);
     var["outputNRDResidualRadianceHitDist"] = renderData.getTexture(kOutputNRDResidualRadianceHitDist);
 
-    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    //var["outputDirect"] = renderData.getTexture(kOutputDirect);
     //var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
+    var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
 
     if (mVarsChanged)
     {

@@ -100,8 +100,8 @@ struct PathState
     float3      L;                      ///< Accumulated path contribution.
 
     //float3      direct_shading;
-    float3      direct_shading_shadow;
-    float       visibility;             ///< Visibility of the shadow ray. For rendering direct shadow buffer.
+    //float3      direct_shading_shadow;
+    //float       visibility;             ///< Visibility of the shadow ray. For rendering direct shadow buffer.
 
     GuideData   guideData;              ///< Denoiser guide data.
     InteriorList interiorList;          ///< Interior list. Keeping track of a stack of materials with medium properties.
