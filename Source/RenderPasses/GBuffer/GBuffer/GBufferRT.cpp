@@ -377,7 +377,9 @@ void GBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderDat
     var["gGBufferRT"]["screenSpacePixelSpreadAngle"] = mpScene->getCamera()->computeScreenSpacePixelSpreadAngle(mFrameDim.y);
 
     const AABB& aabb = mpScene->getSceneBounds();
-    var["gGBufferRT"]["sceneScale"] = 0.5f / (aabb.radius() + 1e-6f);
+    const float3 sceneExtent = aabb.extent();
+    var["gGBufferRT"]["sceneRadius"] = aabb.radius();
+    var["gGBufferRT"]["sceneScale"] = float3(1.f / sceneExtent.x, 1.f / sceneExtent.y, 1.f / sceneExtent.z);
     var["gGBufferRT"]["minPoint"] = aabb.minPoint;
 
     // Bind output channels as UAV buffers.

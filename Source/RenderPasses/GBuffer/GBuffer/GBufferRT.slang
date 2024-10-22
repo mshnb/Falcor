@@ -106,8 +106,9 @@ struct GBufferRT
     float2 invFrameDim;
     uint frameCount;
     float screenSpacePixelSpreadAngle;
-    float sceneScale;
+    float3 sceneScale;
     float3 minPoint;
+    float sceneRadius;
 
     //EnvMapSampler envMapSampler;
 
@@ -402,7 +403,8 @@ struct GBufferRT
                 gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
             }
 
-            const bool hasReflection = (lobeType & (uint)LobeType::Reflection) != 0 && (bsdfProperties.roughness < 1.f || bsdfProperties.metallic > 0.f);
+            const bool hitFront = dot(gbuf.normW.xyz, rayDir) < 0.f;
+            const bool hasReflection = hitFront && (lobeType & (uint)LobeType::Reflection) != 0 && (bsdfProperties.roughness < 1.f || bsdfProperties.metallic > 0.f);
             if (is_valid(gMask))
             {
                 // bool isEmissive = any(bsdfProperties.emission > 0.f);
@@ -458,20 +460,32 @@ struct GBufferRT
         return calcMotionVector(pixelPos, prevPosH, frameDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
     }
 
-    float hitBounding(const float3 rayOrigin, const float3 rayDir)
+    float3 normalizeDir(float3 dir)
     {
-        float sceneRange = 0.5f / sceneScale;
-        float t_x = sceneRange, t_y = sceneRange, t_z = sceneRange;
-        float3 rayOriginN = (rayOrigin - minPoint) * sceneScale * 2.f - 1.f;
-        if (abs(rayDir.x) > 1e-6f)
-            t_x = 1.f / abs(rayDir.x) - rayOriginN.x / rayDir.x;
-        if (abs(rayDir.y) > 1e-6f)
-            t_y = 1.f / abs(rayDir.y) - rayOriginN.y / rayDir.y;
-        if (abs(rayDir.z) > 1e-6f)
-            t_z = 1.f / abs(rayDir.z) - rayOriginN.z / rayDir.z;
+        return normalize(sceneScale * dir);
+    }
+
+    float3 normalizePoint(float3 point)
+    {
+        return sceneScale * (point - minPoint);
+    }
+
+    // return the hit point in normalized space [-1, 1]
+    float hitBounding(const float3 rayOriginN, const float3 rayDirN)
+    {
+        const float t_max = 3.4641f; // 2*sqrt(3)
+        const float inv_t_max = 0.2886753f;
+        float t_x = t_max, t_y = t_max, t_z = t_max;
+
+        if (abs(rayDirN.x) > 1e-6f)
+            t_x = 1.f / abs(rayDirN.x) - rayOriginN.x / rayDirN.x;
+        if (abs(rayDirN.y) > 1e-6f)
+            t_y = 1.f / abs(rayDirN.y) - rayOriginN.y / rayDirN.y;
+        if (abs(rayDirN.z) > 1e-6f)
+            t_z = 1.f / abs(rayDirN.z) - rayOriginN.z / rayDirN.z;
 
         float t = min(t_x, min(t_y, t_z));
-        return t * sceneRange;
+        return t * inv_t_max; // normalize to [0, 1]
     }
 
     void writeMiss(const uint2 pixel, const float3 rayOrigin, const float3 rayDir, inout RayData rayData)
@@ -541,10 +555,18 @@ struct GBufferRT
         }
         else if (rayData.bounce == 1)
         {
-            float t = hitBounding(rayOrigin, rayDir);
-
             if (is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = float4(0.f, 0.f, 0.f, 1.f);
+
+            // convert to normalize space [0, 1]
+            float3 rayOriginN = normalizePoint(rayOrigin);
+            float3 rayDirN = normalizeDir(rayDir);
+
+            // compute in space [-1, 1]
+            float t = hitBounding(rayOriginN * 2.f - 1.f, rayDirN);
+
+            // convert to world space
+            t = 2.f * sceneRadius * t;
 
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = float4(rayOrigin + t * rayDir, 1.f);
