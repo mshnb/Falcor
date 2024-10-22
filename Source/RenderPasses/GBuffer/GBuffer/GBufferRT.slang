@@ -504,7 +504,20 @@ struct GBufferRT
 
             // GBuffer channels
             if (is_valid(gPosW))
-                gPosW[pixel] = {};
+            {
+                // convert to normalize space [0, 1]
+                float3 rayOriginN = normalizePoint(rayOrigin);
+                float3 rayDirN = normalizeDir(rayDir);
+
+                // compute in space [-1, 1]
+                float t = hitBounding(rayOriginN * 2.f - 1.f, rayDirN);
+
+                // convert to world space
+                t = 2.f * sceneRadius * t;
+
+                gPosW[pixel] = float4(rayOrigin + t * rayDir, 1.f);
+            }
+
             if (is_valid(gNormW))
                 gNormW[pixel] = {};
             if (is_valid(gTangentW))
@@ -555,6 +568,8 @@ struct GBufferRT
                 gReflectDepth[pixel] = 0.f;
             if (is_valid(gMiss))
                 gMiss[pixel] = 1.f;
+
+            rayData.exit = true;
         }
         else if (rayData.bounce == 1)
         {
