@@ -62,6 +62,7 @@ RWTexture2D<float4> gViewW;
 RWTexture2D<uint> gTime;
 RWTexture2D<float> gDisocclusion;
 RWTexture2D<float> gMask;
+RWTexture2D<float> gMiss;
 
 RWTexture2D<float4> gDiffRough;
 RWTexture2D<float4> gReflectDirW;
@@ -552,6 +553,8 @@ struct GBufferRT
                 gReflectPosW[pixel] = {};
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = 0.f;
+            if (is_valid(gMiss))
+                gMiss[pixel] = 1.f;
         }
         else if (rayData.bounce == 1)
         {

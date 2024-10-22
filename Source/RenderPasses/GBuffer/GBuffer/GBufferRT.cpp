@@ -63,6 +63,7 @@ const ChannelList kGBufferExtraChannels = {
     { "time",                       "gTime",                        "Per-pixel execution time",                                true /* optional */, ResourceFormat::R32Uint      },
     { "disocclusion",               "gDisocclusion",                "Disocclusion mask",                                       true /* optional */, ResourceFormat::R32Float     },
     { "mask",                       "gMask",                        "Mask",                                                    true /* optional */, ResourceFormat::R32Float     },
+    { "miss",                       "gMiss",                        "Miss",                                                    true /* optional */, ResourceFormat::R32Float     },
 
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDirW",                "gReflectDirW",                 "Reflective direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
