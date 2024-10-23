@@ -379,9 +379,9 @@ void GBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderDat
 
     const AABB& aabb = mpScene->getSceneBounds();
     const float3 sceneExtent = aabb.extent();
+    var["gGBufferRT"]["sceneScale"] = 0.5f / aabb.radius();
     var["gGBufferRT"]["sceneRadius"] = aabb.radius();
-    var["gGBufferRT"]["sceneScale"] = float3(1.f / sceneExtent.x, 1.f / sceneExtent.y, 1.f / sceneExtent.z);
-    var["gGBufferRT"]["minPoint"] = aabb.minPoint;
+    var["gGBufferRT"]["sceneMinPoint"] = aabb.minPoint;
 
     // Bind output channels as UAV buffers.
     auto bind = [&](const ChannelDesc& channel)
