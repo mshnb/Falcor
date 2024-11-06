@@ -67,6 +67,7 @@ RWTexture2D<float> gMiss;
 RWTexture2D<float4> gDiffRough;
 RWTexture2D<float4> gReflectDirW;
 RWTexture2D<float4> gReflectPosW;
+RWTexture2D<float4> gReflectNormalW;
 RWTexture2D<float4> gReflectDiffRough;
 RWTexture2D<float> gReflectDepth;
 
@@ -432,6 +433,8 @@ struct GBufferRT
 
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
+            if (is_valid(gReflectNormalW))
+                gReflectNormalW[pixel] = {};
             if (is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = {};
             if (is_valid(gReflectDepth))
@@ -441,6 +444,9 @@ struct GBufferRT
         {
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = float4(sd.posW, 1.f);
+
+            if (is_valid(gReflectNormalW))
+                gReflectNormalW[pixel] = float4(gbuf.normW.xyz, 1.f);
 
             if(is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
@@ -467,7 +473,7 @@ struct GBufferRT
     }
 
     // computing the hit point in normalized space [-1, 1]
-    float hitBounding(const float3 rayOriginN, const float3 rayDirN)
+    void hitBounding(const float3 rayOriginN, const float3 rayDirN, inout float t, inout float3 normal)
     {
         const float t_max = 3.4641f; // 2*sqrt(3)
         float t_x = t_max, t_y = t_max, t_z = t_max;
@@ -479,8 +485,13 @@ struct GBufferRT
         if (abs(rayDirN.z) > 1e-6f)
             t_z = 1.f / abs(rayDirN.z) - rayOriginN.z / rayDirN.z;
 
-        float t = min(t_x, min(t_y, t_z));
-        return t;
+        t = min(t_x, min(t_y, t_z));
+        if (abs(t - t_x) < 1e-6f)
+            normal = float3(sign(rayDirN.x), 0, 0);
+        else if (abs(t - t_y) < 1e-6f)
+            normal = float3(sign(rayDirN.y), 0, 0);
+        else
+            normal = float3(sign(rayDirN.z), 0, 0);
     }
 
     void writeMiss(const uint2 pixel, const float3 rayOrigin, const float3 rayDir, inout RayData rayData)
@@ -503,10 +514,16 @@ struct GBufferRT
                 float3 rayOriginN = normalizePoint(rayOrigin);
 
                 // compute in space [-1, 1]
-                float t = hitBounding(rayOriginN * 2.f - 1.f, rayDir);
+                float t;
+                float3 normal;
+                hitBounding(rayOriginN * 2.f - 1.f, rayDir, t, normal);
 
                 // convert to world space
                 gPosW[pixel] = float4(rayOrigin + sceneRadius * t * rayDir, 1.f);
+
+                if (is_valid(gReflectNormalW))
+                    gReflectNormalW[pixel] = float4(normal, 1.f);
+
             }
 
             if (is_valid(gNormW))
@@ -555,6 +572,8 @@ struct GBufferRT
                 gReflectDiffRough[pixel] = {};
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
+            if (is_valid(gReflectNormalW))
+                gReflectNormalW[pixel] = {};
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = 0.f;
             if (is_valid(gMiss))
@@ -571,10 +590,15 @@ struct GBufferRT
             float3 rayOriginN = normalizePoint(rayOrigin);
 
             // compute in space [-1, 1]
-            float t = hitBounding(rayOriginN * 2.f - 1.f, rayDir);
+            float t;
+            float3 normal;
+            hitBounding(rayOriginN * 2.f - 1.f, rayDir, t, normal);
 
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = float4(rayOrigin + sceneRadius * t * rayDir, 1.f);
+
+            if (is_valid(gReflectNormalW))
+                gReflectNormalW[pixel] = float4(normal, 1.f);
 
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = sceneRadius * t;

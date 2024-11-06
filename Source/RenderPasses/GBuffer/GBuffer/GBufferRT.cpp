@@ -68,6 +68,7 @@ const ChannelList kGBufferExtraChannels = {
     { "diffRough",                  "gDiffRough",                   "Diffuse reflection albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDirW",                "gReflectDirW",                 "Reflective direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectPosW",                "gReflectPosW",                 "Reflective position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
+    { "reflectNormalW",             "gReflectNormalW",              "Reflective normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDiffRough",           "gReflectDiffRough",            "Reflective diffuse reflection albedo and roughness",      true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDepth",               "gReflectDepth",                "Reflective depth",                                        true /* optional */, ResourceFormat::R32Float     },
 
