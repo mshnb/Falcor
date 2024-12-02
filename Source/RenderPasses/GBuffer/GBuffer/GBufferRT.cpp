@@ -220,6 +220,9 @@ void GBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene
     GBuffer::setScene(pRenderContext, pScene);
 
     recreatePrograms();
+
+    if (mpScene->useEnvLight())
+        mpEnvMapSampler = std::make_unique<EnvMapSampler>(mpDevice, mpScene->getEnvMap());
 }
 
 void GBufferRT::parseProperties(const Properties& props)
@@ -353,6 +356,7 @@ DefineList GBufferRT::getShaderDefines(const RenderData& renderData) const
     defines.add("USE_ALPHA_TEST", mUseAlphaTest ? "1" : "0");
     defines.add("LOD_MODE", std::to_string((uint32_t)mLODMode));
     defines.add("ADJUST_SHADING_NORMALS", mAdjustShadingNormals ? "1" : "0");
+    defines.add("USE_ENV_LIGHT", mpScene->useEnvLight() ? "1" : "0");
     defines.add("MAX_BOUNCES", std::to_string(mMaxBounces));
 
     // Setup ray flags.
@@ -383,6 +387,9 @@ void GBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderDat
     var["gGBufferRT"]["sceneScale"] = 0.5f / aabb.radius();
     var["gGBufferRT"]["sceneRadius"] = aabb.radius();
     var["gGBufferRT"]["sceneMinPoint"] = aabb.minPoint;
+
+    if (mpScene->useEnvLight())
+        mpEnvMapSampler->bindShaderData(var["gGBufferRT"]["envMapSampler"]);
 
     // Bind output channels as UAV buffers.
     auto bind = [&](const ChannelDesc& channel)

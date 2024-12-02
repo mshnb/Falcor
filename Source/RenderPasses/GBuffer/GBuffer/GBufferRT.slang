@@ -34,7 +34,7 @@ import Utils.Debug.PixelDebug;
 import Rendering.Materials.TexLODTypes;
 import Rendering.Materials.TexLODHelpers;
 import Rendering.Materials.Fresnel;
-//import Rendering.Lights.EnvMapSampler;
+import Rendering.Lights.EnvMapSampler;
 import Scene.Material.ShadingUtils;
 import GBufferHelpers;
 
@@ -112,7 +112,7 @@ struct GBufferRT
     float sceneScale;
     float sceneRadius;
 
-    //EnvMapSampler envMapSampler;
+    EnvMapSampler envMapSampler;
 
     /**
      * Ray differentials for primary hit. Code from RayTracingGems, Chapter 20.
@@ -415,20 +415,12 @@ struct GBufferRT
 
             if (is_valid(gReflectDirW))
             {
-                if (hasReflection)
-                {
-                    float3 wi = sd.frame.toLocal(-rayDir);
-                    float3 wo = float3(-wi.x, -wi.y, wi.z);
-                    rayData.hitPosW = sd.computeRayOrigin();
-                    rayData.nextDirW = normalize(sd.frame.fromLocal(wo));
+                float3 wi = sd.frame.toLocal(-rayDir);
+                float3 wo = float3(-wi.x, -wi.y, wi.z);
+                rayData.hitPosW = sd.computeRayOrigin();
+                rayData.nextDirW = normalize(sd.frame.fromLocal(wo));
 
-                    gReflectDirW[pixel] = float4(rayData.nextDirW, 1.f);
-                }
-                else
-                {
-                    gReflectDirW[pixel] = {};
-                    rayData.exit = true;
-                }
+                gReflectDirW[pixel] = float4(rayData.nextDirW, 1.f);
             }
 
             if (is_valid(gReflectPosW))
@@ -496,9 +488,9 @@ struct GBufferRT
 
     void writeMiss(const uint2 pixel, const float3 rayOrigin, const float3 rayDir, inout RayData rayData)
     {
-        // float3 emission = float3(0.0f);
-        // if (USE_ENV_LIGHT)
-        //     emission = envMapSampler.eval(rayDir);
+        float3 emission = float3(0.0f);
+        if (USE_ENV_LIGHT)
+            emission = envMapSampler.eval(rayDir);
 
         if (rayData.bounce == 0)
         {
@@ -559,7 +551,7 @@ struct GBufferRT
             if (is_valid(gSpecRough))
                 gSpecRough[pixel] = {};
             if (is_valid(gEmissive))
-                gEmissive[pixel] = {};
+                gEmissive[pixel] = float4(emission, 1.0f);
             if (is_valid(gDisocclusion))
                 gDisocclusion[pixel] = 0.f;
             if (is_valid(gMask))

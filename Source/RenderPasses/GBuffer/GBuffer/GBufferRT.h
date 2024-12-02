@@ -28,6 +28,7 @@
 #pragma once
 #include "GBuffer.h"
 #include "Utils/Sampling/SampleGenerator.h"
+#include "Rendering/Lights/EnvMapSampler.h"
 #include "Rendering/Materials/TexLODTypes.slang"
 
 using namespace Falcor;
@@ -82,5 +83,6 @@ private:
     } mRaytrace;
 
     ref<ComputePass> mpComputePass;
+    std::unique_ptr<EnvMapSampler> mpEnvMapSampler;
     uint32_t mMaxBounces = 2;
 };
