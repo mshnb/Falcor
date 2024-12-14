@@ -4124,6 +4124,80 @@ namespace Falcor
         return d;
     }
 
+    std::set<uint32_t> Scene::getSubtreeNodeIDs(NodeID nodeID) const
+    {
+        std::set<uint32_t> result;
+        for (auto i = 0; i < mSceneGraph.size(); i++)
+        {
+            auto t = i;
+            while (t >= 0 && t < mSceneGraph.size())
+            {
+                if (t == nodeID.get()) 
+                {
+                    result.insert(i);
+                    break;
+                }
+                t = mSceneGraph[t].parent.get();
+            }
+        }
+        return result;
+    }
+
+    std::vector<std::string> Scene::getSubtreeMaterialNames(NodeID nodeID, const std::set<uint32_t>& subtreeNodeIDs) const
+    {
+        std::vector<std::string> names;
+        if (nodeID == NodeID::Invalid()) return names;
+        assert(
+            subtreeNodeIDs.find(nodeID.get()) != subtreeNodeIDs.end() &&
+            subtreeNodeIDs.find(mSceneGraph[nodeID.get()].parent.get()) == subtreeNodeIDs.end()
+        );
+        for (const auto& g : mGeometryInstanceData)
+        {
+            auto t = g.globalMatrixID;
+            if (subtreeNodeIDs.find(t) != subtreeNodeIDs.end())
+                names.push_back(getMaterial(MaterialID(g.materialID))->getName());
+        }
+        return names;
+    }
+
+    AABB Scene::getSubtreeBounds(NodeID nodeID, const std::set<uint32_t>& subtreeNodeIDs) const
+    {
+        auto result = AABB();
+        if (nodeID == NodeID::Invalid()) return result;
+        assert(
+            subtreeNodeIDs.find(nodeID.get()) != subtreeNodeIDs.end() &&
+            subtreeNodeIDs.find(mSceneGraph[nodeID.get()].parent.get()) == subtreeNodeIDs.end()
+        );
+
+        const auto& globalMatrices = mpAnimationController->getGlobalMatrices();
+        for (const auto& inst : mGeometryInstanceData)
+        {
+            if (subtreeNodeIDs.find(inst.globalMatrixID) != subtreeNodeIDs.end())
+            {
+                const float4x4& transform = globalMatrices[inst.globalMatrixID];
+                switch (inst.getType())
+                {
+                    case GeometryType::TriangleMesh:
+                    case GeometryType::DisplacedTriangleMesh:
+                    {
+                        const AABB& meshBB = mMeshBBs[inst.geometryID];
+                        result |= meshBB.transform(transform);
+                        break;
+                    }
+                    case GeometryType::Curve:
+                    {
+                        FALCOR_THROW("Unsupport Curve currently");
+                    }
+                    case GeometryType::SDFGrid:
+                    {
+                        FALCOR_THROW("Unsupport SDFGrid currently");
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     void Scene::updateNodeMatrix(uint32_t node_id, const std::vector<float>& matrix)
     {
         FALCOR_ASSERT(node_id < mSceneGraph.size());
@@ -4415,5 +4489,8 @@ namespace Falcor
 
         scene.def("update_node_matrix", &Scene::updateNodeMatrix, "node_id"_a, "matrix"_a);
         scene.def_property_readonly("name_to_nodeID_dict", &Scene::getNameToNodeIDDict);
+        scene.def("get_subtree_node_IDs", &Scene::getSubtreeNodeIDs, "nodeID"_a);
+        scene.def("get_subtree_bounds", &Scene::getSubtreeBounds, "nodeID"_a, "subtreeNodeIDs"_a);
+        scene.def("get_subtree_material_names", &Scene::getSubtreeMaterialNames, "nodeID"_a, "subtreeNodeIDs"_a);
     }
 }

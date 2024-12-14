@@ -1122,6 +1122,9 @@ namespace Falcor
         uint64_t getMemoryUsageInBytes() const { return getSceneStats().getTotalMemory(); }
 
         pybind11::dict getNameToNodeIDDict() const;
+        std::vector<std::string> getSubtreeMaterialNames(NodeID nodeID, const std::set<uint32_t>& subtreeNodeIDs) const;
+        AABB getSubtreeBounds(NodeID nodeID, const std::set<uint32_t>& subtreeNodeIDs) const;
+        std::set<uint32_t> getSubtreeNodeIDs(NodeID nodeID) const;
 
         void updateNodeMatrix(uint32_t node_id, const std::vector<float>& matrix);
 
