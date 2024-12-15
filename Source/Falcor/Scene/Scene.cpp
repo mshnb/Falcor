@@ -4460,7 +4460,7 @@ namespace Falcor
         scene.def(kGetMaterial.c_str(), &Scene::getMaterial, "index"_a); // PYTHONDEPRECATED
         scene.def(kGetMaterial.c_str(), &Scene::getMaterialByName, "name"_a); // PYTHONDEPRECATED
         scene.def("get_material_by_id", &Scene::getMaterial, "index"_a);
-        scene.def("get_material", &Scene::getMaterialByName, "name"_a);
+        scene.def("get_material_by_name", &Scene::getMaterialByName, "name"_a);
         scene.def("addMaterial", &Scene::addMaterial, "material"_a);
         scene.def("getGeometryIDsForMaterial", [](const Scene* scene, const ref<Material>& pMaterial)
         {
