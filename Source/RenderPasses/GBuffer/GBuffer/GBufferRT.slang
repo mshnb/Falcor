@@ -69,6 +69,7 @@ RWTexture2D<float4> gReflectDirW;
 RWTexture2D<float4> gReflectPosW;
 RWTexture2D<float4> gReflectNormalW;
 RWTexture2D<float4> gReflectDiffRough;
+RWTexture2D<float4> gReflectEmissive;
 RWTexture2D<float> gReflectDepth;
 
 #define is_valid(name) (is_valid_##name != 0)
@@ -429,6 +430,8 @@ struct GBufferRT
                 gReflectNormalW[pixel] = {};
             if (is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = {};
+            if (is_valid(gReflectEmissive))
+                gReflectEmissive[pixel] = {};
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = 0.f;
         }
@@ -442,6 +445,9 @@ struct GBufferRT
 
             if(is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+
+            if(is_valid(gReflectEmissive))
+                gReflectEmissive[pixel] = gbuf.emissive;
 
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = length(sd.posW - rayOrigin);
@@ -513,13 +519,11 @@ struct GBufferRT
                 // convert to world space
                 gPosW[pixel] = float4(rayOrigin + sceneRadius * t * rayDir, 1.f);
 
-                if (is_valid(gReflectNormalW))
-                    gReflectNormalW[pixel] = float4(normal, 1.f);
+                if (is_valid(gNormW))
+                    gNormW[pixel] = float4(normal, 1.f);
 
             }
 
-            if (is_valid(gNormW))
-                gNormW[pixel] = {};
             if (is_valid(gTangentW))
                 gTangentW[pixel] = {};
             if (is_valid(gFaceNormalW))
@@ -562,6 +566,8 @@ struct GBufferRT
                 gReflectDirW[pixel] = {};
             if (is_valid(gReflectDiffRough))
                 gReflectDiffRough[pixel] = {};
+            if (is_valid(gReflectEmissive))
+                gReflectEmissive[pixel] = {};
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
             if (is_valid(gReflectNormalW))
@@ -591,6 +597,9 @@ struct GBufferRT
 
             if (is_valid(gReflectNormalW))
                 gReflectNormalW[pixel] = float4(normal, 1.f);
+
+            if (is_valid(gReflectEmissive))
+                gReflectEmissive[pixel] = float4(emission, 1.0f);
 
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = sceneRadius * t;

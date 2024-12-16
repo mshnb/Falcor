@@ -56,6 +56,7 @@ Texture2D<float4> gReflectPosW;
 Texture2D<float4> gReflectDirW;
 Texture2D<float4> gReflectNormalW;
 Texture2D<float4> gReflectDiffRough;
+Texture2D<float4> gReflectEmissive;
 Texture2D<float>  gReflectDepth;
 
 RWTexture2D<float4> gOutColor;
@@ -69,6 +70,7 @@ RWTexture2D<float4> gOutReflectPosW;
 RWTexture2D<float4> gOutReflectDirW;
 RWTexture2D<float4> gOutReflectNormalW;
 RWTexture2D<float4> gOutReflectDiffRough;
+RWTexture2D<float4> gOutReflectEmissive;
 RWTexture2D<float>  gOutReflectDepth;
 
 // Last frame data, format depends on accumulation mode.
@@ -84,6 +86,7 @@ RWTexture2D<float4> gLastFrameSumReflectPosW;
 RWTexture2D<float4> gLastFrameSumReflectDirW;
 RWTexture2D<float4> gLastFrameSumReflectNormalW;
 RWTexture2D<float4> gLastFrameSumReflectDiffRough;
+RWTexture2D<float4> gLastFrameSumReflectEmissive;
 RWTexture2D<float>  gLastFrameSumReflectDepth;
 
 void accumulate_func(float curVal, inout float lastFrameSum, inout float result, bool accumulate)
@@ -185,5 +188,6 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(ReflectDirW);
     handle(ReflectNormalW);
     handle(ReflectDiffRough);
+    handle(ReflectEmissive);
     handleFloat(ReflectDepth);
 }
