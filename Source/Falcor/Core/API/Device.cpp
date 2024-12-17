@@ -513,6 +513,21 @@ Device::Device(const Desc& desc) : mDesc(desc)
         gfxDesc.adapterLUID = reinterpret_cast<const gfx::AdapterLUID*>(&gpus[mDesc.gpu].luid);
         if (SLANG_FAILED(gfxCreateDevice(&gfxDesc, mGfxDevice.writeRef())))
             logWarning("Failed to create device on GPU {} ({}).", mDesc.gpu, gpus[mDesc.gpu].name);
+
+        // print more debug info
+        for (int i = 0; i < gpus.size(); i++)
+        {
+            const AdapterInfo& gpu = gpus[i];
+            std::stringstream ss;
+            for (int j = 0; j < 16; j++)
+            {
+                ss << std::setw(2) << std::setfill('0') << std::hex << (int)(gpu.luid.luid[j]);
+                if (j == 3 || j == 5 || j == 7 || j == 9)
+                    ss << "-";
+            }
+            
+            logDebug("AdapterInfo {}: name={}, vendorID={}, deviceID={}, luid={}", i, gpu.name, gpu.vendorID, gpu.deviceID, ss.str());
+        }
     }
 
     // Otherwise try create device on any available GPU.
