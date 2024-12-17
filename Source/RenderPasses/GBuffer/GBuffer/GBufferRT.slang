@@ -319,11 +319,6 @@ struct GBufferRT
         let bsdfProperties = mi.getProperties(sd);
 
         const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
-
-        const uint lobeType = mi.getLobeTypes(sd);
-        // const bool isTransmissive = (lobeType & (uint)LobeType::Transmission) != 0;
-        // const bool isDelta = (lobeType & (uint)LobeType::Delta) != 0;
-
         if (rayData.bounce == 0)
         {
             // GBuffer channels
@@ -405,13 +400,9 @@ struct GBufferRT
                 gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
             }
 
-            const bool hitFront = dot(gbuf.normW.xyz, rayDir) < 0.f;
-            const bool hasReflection = hitFront && (lobeType & (uint)LobeType::Reflection) != 0 && (bsdfProperties.roughness < 1.f || bsdfProperties.metallic > 0.f);
+            const bool hitFront = sd.frontFacing || sd.mtl.isDoubleSided(); //dot(gbuf.normW.xyz, rayDir) < 0.f;
             if (is_valid(gMask))
-            {
-                // bool isEmissive = any(bsdfProperties.emission > 0.f);
-                gMask[pixel] = hasReflection ? 1.f : 0.f;
-            }
+                gMask[pixel] = hitFront ? 1.f : 0.f;
 
             if (is_valid(gReflectDirW))
             {
@@ -555,7 +546,7 @@ struct GBufferRT
             if (is_valid(gDisocclusion))
                 gDisocclusion[pixel] = 0.f;
             if (is_valid(gMask))
-                gMask[pixel] = 0.0f;
+                gMask[pixel] = 1.0f;
             if (is_valid(gDiffRough))
                 gDiffRough[pixel] = {};
             if (is_valid(gReflectDirW))
