@@ -2169,6 +2169,43 @@ namespace Falcor
             }
         }
 
+        if (auto objectsGroup = widget.group("Objects"))
+        {
+            auto showObject = [&](uint32_t nodeID, const std::string& label)
+            {
+                auto& pNode = mSceneGraph[nodeID];
+                if (auto widget = objectsGroup.group(label))
+                {
+                    uint32_t parent_id = pNode.parent.get();
+                    std::string parent_str = parent_id != NodeID::Invalid().get() ? std::to_string(parent_id) : "None";
+                    widget.text("parent: " + parent_str);
+
+                    // TODO: scale, rotation, translation
+                    float4x4 matrix = pNode.transform;
+                    if (widget.var("matrix0", matrix.getRow(0), -100.f, 100.f, 0.01f) ||
+                        widget.var("matrix1", matrix.getRow(1), -100.f, 100.f, 0.01f) ||
+                        widget.var("matrix2", matrix.getRow(2), -100.f, 100.f, 0.01f))
+                    {
+
+                        std::vector<float> flaten;
+                        flaten.reserve(16);
+                        flaten.resize(16);
+                        std::memcpy(flaten.data(), matrix.data(), 16 * sizeof(float));
+                        updateNodeMatrix(nodeID, flaten);
+                    }
+                }
+            };
+
+            uint32_t nodeID = 0;
+            for (auto& node : mSceneGraph)
+            {
+                auto label = std::to_string(nodeID) + ": " + node.name;
+                showObject(nodeID, label);
+                nodeID++;
+            }
+            //node.transform = validateTransformMatrix(mat);
+        }
+
         if (auto statsGroup = widget.group("Statistics"))
         {
             const auto& s = mSceneStats;
