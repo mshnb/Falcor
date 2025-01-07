@@ -80,7 +80,7 @@ namespace
 
     //const std::string kOutputDirectColor = "directColor";
     //const std::string kOutputDirect = "direct";
-    const std::string kOutputSpecular = "specular";
+    //const std::string kOutputSpecular = "specular";
   
     const Falcor::ChannelList kOutputChannels =
     {
@@ -114,7 +114,7 @@ namespace
 
         //{ kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float },
         //{ kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float }
-        { kOutputSpecular,                                  "",     "Output specular color (rgb channel) and specular weight (alpha channel)", true /* optional */, ResourceFormat::RGBA32Float},
+        //{ kOutputSpecular,                                  "",     "Output specular color (rgb channel) and specular weight (alpha channel)", true /* optional */, ResourceFormat::RGBA32Float},
 
     };
 
@@ -1122,7 +1122,7 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     var["sampleCount"] = pSampleCount; // Can be nullptr
     var["outputColor"] = renderData.getTexture(kOutputColor);
     //var["outputDirect"] = renderData.getTexture(kOutputDirect);
-    var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
+    //var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
     
     if (useLightSampling && mpEmissiveSampler)
     {
@@ -1168,11 +1168,11 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
         //    pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
         //}
 
-        if (renderData[kOutputSpecular] != nullptr)
-        {
-            const auto& pOutputSpecular = renderData.getTexture(kOutputSpecular);
-            pRenderContext->clearUAV(pOutputSpecular->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputSpecular] != nullptr)
+        //{
+        //    const auto& pOutputSpecular = renderData.getTexture(kOutputSpecular);
+        //    pRenderContext->clearUAV(pOutputSpecular->getUAV().get(), float4(0.f));
+        //}
 
         // Set refresh flag if changes that affect the output have occured.
         // This is needed to ensure other passes get notified when the path tracer is enabled/disabled.
@@ -1252,7 +1252,7 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
 
     // Check if NEGL buffers should be generated.
     //mOutputNEGLData = renderData[kOutputDirect] != nullptr;
-    mOutputNEGLData = renderData[kOutputSpecular] != nullptr;
+    //mOutputNEGLData = renderData[kOutputSpecular] != nullptr;
 
     // Enable pixel stats if rayCount or pathLength outputs are connected.
     if (renderData[kOutputRayCount] != nullptr || renderData[kOutputPathLength] != nullptr)
@@ -1394,7 +1394,7 @@ void PathTracer::resolvePass(RenderContext* pRenderContext, const RenderData& re
 
     //var["outputDirect"] = renderData.getTexture(kOutputDirect);
     //var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
-    var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
+    //var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
 
     if (mVarsChanged)
     {

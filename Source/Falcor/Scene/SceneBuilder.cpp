@@ -3006,5 +3006,7 @@ namespace Falcor
 
         sceneBuilder.def("setNodeAnimated", &SceneBuilder::setNodeAnimated);
         sceneBuilder.def("setParentNode", &SceneBuilder::setParentNode);
+
+        sceneBuilder.def_property_readonly("totSceneNode", &SceneBuilder::getNodeCount);
     }
 }
