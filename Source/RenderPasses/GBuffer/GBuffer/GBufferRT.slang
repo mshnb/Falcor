@@ -401,9 +401,12 @@ struct GBufferRT
                 gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
             }
 
-            const bool hitFront = sd.frontFacing || sd.mtl.isDoubleSided();
+            // const bool hitFront = sd.frontFacing || sd.mtl.isDoubleSided();
+            // if (is_valid(gMask))
+            //     gMask[pixel] = hitFront ? 1.f : 0.f;
+
             if (is_valid(gMask))
-                gMask[pixel] = hitFront ? 1.f : 0.f;
+                gMask[pixel] = 0.f;
 
             if (is_valid(gReflectDirW))
             {
@@ -550,7 +553,7 @@ struct GBufferRT
             if (is_valid(gDisocclusion))
                 gDisocclusion[pixel] = 0.f;
             if (is_valid(gMask))
-                gMask[pixel] = 1.0f;
+                gMask[pixel] = 0.0f;
             if (is_valid(gDiffRough))
                 gDiffRough[pixel] = {};
             if (is_valid(gReflectDirW))
@@ -595,6 +598,8 @@ struct GBufferRT
             if (is_valid(gReflectDepth))
                 gReflectDepth[pixel] = sceneRadius * t;
 
+            if (is_valid(gMask))
+                gMask[pixel] = 1.f;
         }
     }
 
