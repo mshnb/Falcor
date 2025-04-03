@@ -106,6 +106,8 @@ struct BSDFProperties
     {
         get { return (flags & (uint)Flags::IsTransmissive) != 0; }
     }
+
+    float eta;
 };
 
 

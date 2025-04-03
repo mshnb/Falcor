@@ -28,6 +28,8 @@
 #include "GBufferBase.h"
 #include "GBuffer/GBufferRaster.h"
 #include "GBuffer/GBufferRT.h"
+#include "GBuffer/ReflectGBufferRT.h"
+#include "GBuffer/RefractGBufferRT.h"
 #include "VBuffer/VBufferRaster.h"
 #include "VBuffer/VBufferRT.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
@@ -39,6 +41,8 @@ extern "C" FALCOR_API_EXPORT void registerPlugin(Falcor::PluginRegistry& registr
 {
     registry.registerClass<RenderPass, GBufferRaster>();
     registry.registerClass<RenderPass, GBufferRT>();
+    registry.registerClass<RenderPass, ReflectGBufferRT>();
+    registry.registerClass<RenderPass, RefractGBufferRT>();
     registry.registerClass<RenderPass, VBufferRaster>();
     registry.registerClass<RenderPass, VBufferRT>();
 }

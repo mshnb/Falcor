@@ -17,6 +17,16 @@ target_sources(GBuffer PRIVATE
     GBuffer/GBufferRT.rt.slang
     GBuffer/GBufferRT.slang
 
+    GBuffer/ReflectGBufferRT.cpp
+    GBuffer/ReflectGBufferRT.h
+    GBuffer/ReflectGBufferRT.rt.slang
+    GBuffer/ReflectGBufferRT.slang
+
+    GBuffer/RefractGBufferRT.cpp
+    GBuffer/RefractGBufferRT.h
+    GBuffer/RefractGBufferRT.rt.slang
+    GBuffer/RefractGBufferRT.slang
+
     VBuffer/VBufferRaster.3d.slang
     VBuffer/VBufferRaster.cpp
     VBuffer/VBufferRaster.h

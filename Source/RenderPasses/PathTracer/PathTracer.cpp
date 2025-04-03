@@ -1341,7 +1341,7 @@ void PathTracer::tracePass(RenderContext* pRenderContext, const RenderData& rend
     tracePass.pProgram->addDefine("OUTPUT_GUIDE_DATA", mOutputGuideData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_DATA", mOutputNRDData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_ADDITIONAL_DATA", mOutputNRDAdditionalData ? "1" : "0");
-    tracePass.pProgram->addDefine("OUTPUT_NEGL_DATA", mOutputNEGLData ? "1" : "0");
+    // tracePass.pProgram->addDefine("OUTPUT_NEGL_DATA", mOutputNEGLData ? "1" : "0");
 
     // Bind global resources.
     auto var = tracePass.pVars->getRootVar();
@@ -1466,7 +1466,7 @@ DefineList PathTracer::StaticParams::getDefines(const PathTracer& owner) const
     defines.add("OUTPUT_GUIDE_DATA", "0");
     defines.add("OUTPUT_NRD_DATA", "0");
     defines.add("OUTPUT_NRD_ADDITIONAL_DATA", "0");
-    defines.add("OUTPUT_NEGL_DATA", "0");
+    // defines.add("OUTPUT_NEGL_DATA", "0");
 
     return defines;
 }

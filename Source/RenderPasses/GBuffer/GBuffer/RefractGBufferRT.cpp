@@ -1,5 +1,5 @@
 /***************************************************************************
- # Copyright (c) 2015-24, NVIDIA CORPORATION. All rights reserved.
+ # Copyright (c) 2015-23, NVIDIA CORPORATION. All rights reserved.
  #
  # Redistribution and use in source and binary forms, with or without
  # modification, are permitted provided that the following conditions
@@ -27,16 +27,17 @@
  **************************************************************************/
 #include "Falcor.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
-#include "GBufferRT.h"
+#include "RefractGBufferRT.h"
 
 namespace
 {
-const std::string kProgramRaytraceFile = "RenderPasses/GBuffer/GBuffer/GBufferRT.rt.slang";
-const std::string kProgramComputeFile = "RenderPasses/GBuffer/GBuffer/GBufferRT.cs.slang";
+const std::string kProgramRaytraceFile = "RenderPasses/GBuffer/GBuffer/RefractGBufferRT.rt.slang";
+//const std::string kProgramComputeFile = "RenderPasses/GBuffer/GBuffer/GBufferRT.cs.slang";
 
 // Scripting options.
 const char kUseTraceRayInline[] = "useTraceRayInline";
 const char kUseDOF[] = "useDOF";
+const char kMaxBounces[] = "maxBounces";
 
 // Ray tracing settings that affect the traversal stack size. Set as small as possible.
 const uint32_t kMaxPayloadSizeBytes = 64;
@@ -50,28 +51,27 @@ const std::string kVBufferName = "vbuffer";
 const ChannelList kGBufferExtraChannels = {
     // clang-format off
     { kVBufferName,                 "gVBuffer",                     "Visibility buffer",                                       true /* optional */, ResourceFormat::Unknown /* set at runtime */ },
-    { "depth",                      "gDepth",                       "Depth buffer (NDC)",                                      true /* optional */, ResourceFormat::R32Float     },
-    { "linearZ",                    "gLinearZ",                     "Linear Z and slope",                                      true /* optional */, ResourceFormat::RG32Float    },
-    { "mvecW",                      "gMotionVectorW",               "Motion vector in world space",                            true /* optional */, ResourceFormat::RGBA16Float  },
-    { "normWRoughnessMaterialID",   "gNormalWRoughnessMaterialID",  "Guide normal in world space, roughness, and material ID", true /* optional */, ResourceFormat::RGB10A2Unorm },
-    { "guideNormalW",               "gGuideNormalW",                "Guide normal in world space",                             true /* optional */, ResourceFormat::RGBA32Float  },
-    { "diffuseOpacity",             "gDiffOpacity",                 "Diffuse reflection albedo and opacity",                   true /* optional */, ResourceFormat::RGBA32Float  },
-    { "specRough",                  "gSpecRough",                   "Specular reflectance and roughness",                      true /* optional */, ResourceFormat::RGBA32Float  },
-    { "emissive",                   "gEmissive",                    "Emissive color",                                          true /* optional */, ResourceFormat::RGBA32Float  },
-    { "viewW",                      "gViewW",                       "View direction in world space",                           true /* optional */, ResourceFormat::RGBA32Float  }, // TODO: Switch to packed 2x16-bit snorm format.
     { "time",                       "gTime",                        "Per-pixel execution time",                                true /* optional */, ResourceFormat::R32Uint      },
-    { "disocclusion",               "gDisocclusion",                "Disocclusion mask",                                       true /* optional */, ResourceFormat::R32Float     },
-    { "mask",                       "gMask",                        "Mask",                                                    true /* optional */, ResourceFormat::R32Float     },
+    { "viewW",                      "gViewW",                       "View direction in world space",                           true /* optional */, ResourceFormat::RGBA32Float  }, // TODO: Switch to packed 2x16-bit snorm format.
+
+    { "refractMask",                "gRefractMask",                 "Refract mask",                                         true /* optional */, ResourceFormat::R32Float     },
+    { "refractDirW",                "gRefractDirW",                 "Refract direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractPosW",                "gRefractPosW",                 "Refract position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractNormalW",             "gRefractNormalW",              "Refract normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractDiffRough",           "gRefractDiffRough",            "Refract diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractEmissive",            "gRefractEmissive",             "Refract Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
+    // { "refractDepth",               "gRefractDepth",                "Refract depth",                                        true /* optional */, ResourceFormat::R32Float     },
+
     // clang-format on
 };
 } // namespace
 
-GBufferRT::GBufferRT(ref<Device> pDevice, const Properties& props) : GBuffer(pDevice)
+RefractGBufferRT::RefractGBufferRT(ref<Device> pDevice, const Properties& props) : GBuffer(pDevice)
 {
     if (!mpDevice->isShaderModelSupported(ShaderModel::SM6_5))
-        FALCOR_THROW("GBufferRT requires Shader Model 6.5 support.");
+        FALCOR_THROW("RefractGBufferRT requires Shader Model 6.5 support.");
     if (!mpDevice->isFeatureSupported(Device::SupportedFeatures::RaytracingTier1_1))
-        FALCOR_THROW("GBufferRT requires Raytracing Tier 1.1 support.");
+        FALCOR_THROW("RefractGBufferRT requires Raytracing Tier 1.1 support.");
 
     parseProperties(props);
 
@@ -79,7 +79,7 @@ GBufferRT::GBufferRT(ref<Device> pDevice, const Properties& props) : GBuffer(pDe
     mpSampleGenerator = SampleGenerator::create(mpDevice, SAMPLE_GENERATOR_DEFAULT);
 }
 
-RenderPassReflection GBufferRT::reflect(const CompileData& compileData)
+RenderPassReflection RefractGBufferRT::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
     const uint2 sz = RenderPassHelpers::calculateIOSize(mOutputSizeSelection, mFixedOutputSize, compileData.defaultTexDims);
@@ -92,7 +92,7 @@ RenderPassReflection GBufferRT::reflect(const CompileData& compileData)
     return reflector;
 }
 
-void GBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void RefractGBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     GBuffer::execute(pRenderContext, renderData);
 
@@ -112,7 +112,7 @@ void GBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderD
 
     if (!pOutput)
     {
-        logWarning("GBufferRT::execute() - Render pass has no connected outputs. Is this intended?");
+        logWarning("RefractGBufferRT::execute() - Render pass has no connected outputs. Is this intended?");
         return;
     }
     FALCOR_ASSERT(pOutput);
@@ -154,7 +154,7 @@ void GBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderD
     mFrameCount++;
 }
 
-void GBufferRT::renderUI(Gui::Widgets& widget)
+void RefractGBufferRT::renderUI(Gui::Widgets& widget)
 {
     // Render the base class UI first.
     GBuffer::renderUI(widget);
@@ -174,6 +174,9 @@ void GBufferRT::renderUI(Gui::Widgets& widget)
     {
         mOptionsChanged = true;
     }
+
+    mOptionsChanged |= widget.var("maxBounces", mMaxBounces, 1u, 8u);
+
     widget.tooltip(
         "This option enables stochastic depth-of-field when the camera's aperture radius is nonzero. "
         "Disable it to force the use of a pinhole camera.",
@@ -181,7 +184,7 @@ void GBufferRT::renderUI(Gui::Widgets& widget)
     );
 }
 
-Properties GBufferRT::getProperties() const
+Properties RefractGBufferRT::getProperties() const
 {
     Properties props = GBuffer::getProperties();
     props[kLODMode] = mLODMode;
@@ -190,14 +193,17 @@ Properties GBufferRT::getProperties() const
     return props;
 }
 
-void GBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
+void RefractGBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
 {
     GBuffer::setScene(pRenderContext, pScene);
 
     recreatePrograms();
+
+    if (mpScene->useEnvLight())
+        mpEnvMapSampler = std::make_unique<EnvMapSampler>(mpDevice, mpScene->getEnvMap());
 }
 
-void GBufferRT::parseProperties(const Properties& props)
+void RefractGBufferRT::parseProperties(const Properties& props)
 {
     GBuffer::parseProperties(props);
 
@@ -209,18 +215,20 @@ void GBufferRT::parseProperties(const Properties& props)
             mUseTraceRayInline = value;
         else if (key == kUseDOF)
             mUseDOF = value;
+        else if (key == kMaxBounces)
+            mMaxBounces = value;
         // TODO: Check for unparsed fields, including those parsed in base classes.
     }
 }
 
-void GBufferRT::recreatePrograms()
+void RefractGBufferRT::recreatePrograms()
 {
     mRaytrace.pProgram = nullptr;
     mRaytrace.pVars = nullptr;
     mpComputePass = nullptr;
 }
 
-void GBufferRT::executeRaytrace(RenderContext* pRenderContext, const RenderData& renderData)
+void RefractGBufferRT::executeRaytrace(RenderContext* pRenderContext, const RenderData& renderData)
 {
     if (!mRaytrace.pProgram || !mRaytrace.pVars)
     {
@@ -288,14 +296,14 @@ void GBufferRT::executeRaytrace(RenderContext* pRenderContext, const RenderData&
     mpScene->raytrace(pRenderContext, mRaytrace.pProgram.get(), mRaytrace.pVars, uint3(mFrameDim, 1));
 }
 
-void GBufferRT::executeCompute(RenderContext* pRenderContext, const RenderData& renderData)
+void RefractGBufferRT::executeCompute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // Create compute pass.
     if (!mpComputePass)
     {
         ProgramDesc desc;
         desc.addShaderModules(mpScene->getShaderModules());
-        desc.addShaderLibrary(kProgramComputeFile).csEntry("main");
+        //desc.addShaderLibrary(kProgramComputeFile).csEntry("main");
         desc.addTypeConformances(mpScene->getTypeConformances());
 
         DefineList defines;
@@ -319,13 +327,15 @@ void GBufferRT::executeCompute(RenderContext* pRenderContext, const RenderData& 
     mpComputePass->execute(pRenderContext, uint3(mFrameDim, 1));
 }
 
-DefineList GBufferRT::getShaderDefines(const RenderData& renderData) const
+DefineList RefractGBufferRT::getShaderDefines(const RenderData& renderData) const
 {
     DefineList defines;
     defines.add("COMPUTE_DEPTH_OF_FIELD", mComputeDOF ? "1" : "0");
     defines.add("USE_ALPHA_TEST", mUseAlphaTest ? "1" : "0");
     defines.add("LOD_MODE", std::to_string((uint32_t)mLODMode));
     defines.add("ADJUST_SHADING_NORMALS", mAdjustShadingNormals ? "1" : "0");
+    defines.add("USE_ENV_LIGHT", mpScene->useEnvLight() ? "1" : "0");
+    defines.add("MAX_BOUNCES", std::to_string(mMaxBounces));
 
     // Setup ray flags.
     RayFlags rayFlags = RayFlags::None;
@@ -342,13 +352,22 @@ DefineList GBufferRT::getShaderDefines(const RenderData& renderData) const
     return defines;
 }
 
-void GBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderData)
+void RefractGBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderData)
 {
     FALCOR_ASSERT(mpScene && mpScene->getCamera());
     var["gGBufferRT"]["frameDim"] = mFrameDim;
     var["gGBufferRT"]["invFrameDim"] = mInvFrameDim;
     var["gGBufferRT"]["frameCount"] = mFrameCount;
     var["gGBufferRT"]["screenSpacePixelSpreadAngle"] = mpScene->getCamera()->computeScreenSpacePixelSpreadAngle(mFrameDim.y);
+
+    const AABB& aabb = mpScene->getSceneBounds();
+    const float3 sceneExtent = aabb.extent();
+    var["gGBufferRT"]["sceneScale"] = 0.5f / aabb.radius();
+    var["gGBufferRT"]["sceneRadius"] = aabb.radius();
+    var["gGBufferRT"]["sceneMinPoint"] = aabb.minPoint;
+
+    if (mpScene->useEnvLight())
+        mpEnvMapSampler->bindShaderData(var["gGBufferRT"]["envMapSampler"]);
 
     // Bind output channels as UAV buffers.
     auto bind = [&](const ChannelDesc& channel)

@@ -155,6 +155,8 @@ struct StandardMaterialInstance : MaterialInstanceBase, IMaterialInstance
 
         if (data.diffuseTransmission > 0.f || data.specularTransmission > 0.f) p.flags |= (uint)BSDFProperties::Flags::IsTransmissive;
 
+        p.eta = data.eta;
+
         return p;
     }
 
