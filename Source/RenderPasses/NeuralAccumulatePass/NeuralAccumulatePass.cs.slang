@@ -48,10 +48,11 @@ cbuffer PerFrameCB
 Texture2D<float4> gColor;
 Texture2D<float4> gPosW;
 Texture2D<float4> gNormW;
-Texture2D<float>  gMask;
 Texture2D<float4> gViewW;
 Texture2D<float4> gDiffRough;
 Texture2D<float4> gEmissive;
+
+Texture2D<float>  gReflectMask;
 Texture2D<float4> gReflectPosW;
 Texture2D<float4> gReflectDirW;
 Texture2D<float4> gReflectNormalW;
@@ -59,13 +60,28 @@ Texture2D<float4> gReflectDiffRough;
 Texture2D<float4> gReflectEmissive;
 Texture2D<float>  gReflectDepth;
 
+Texture2D<float>  gRefractMask;
+Texture2D<float4> gRefractPosW;
+Texture2D<float4> gRefractDirW;
+Texture2D<float4> gRefractNormalW;
+Texture2D<float4> gRefractDiffRough;
+Texture2D<float4> gRefractEmissive;
+
+Texture2D<float>  gMixedMask;
+Texture2D<float4> gMixedPosW;
+Texture2D<float4> gMixedDirW;
+Texture2D<float4> gMixedNormalW;
+Texture2D<float4> gMixedDiffRough;
+Texture2D<float4> gMixedEmissive;
+
 RWTexture2D<float4> gOutColor;
 RWTexture2D<float4> gOutPosW;
 RWTexture2D<float4> gOutNormW;
-RWTexture2D<float>  gOutMask;
 RWTexture2D<float4> gOutViewW;
 RWTexture2D<float4> gOutDiffRough;
 RWTexture2D<float4> gOutEmissive;
+
+RWTexture2D<float>  gOutReflectMask;
 RWTexture2D<float4> gOutReflectPosW;
 RWTexture2D<float4> gOutReflectDirW;
 RWTexture2D<float4> gOutReflectNormalW;
@@ -73,21 +89,49 @@ RWTexture2D<float4> gOutReflectDiffRough;
 RWTexture2D<float4> gOutReflectEmissive;
 RWTexture2D<float>  gOutReflectDepth;
 
+RWTexture2D<float>  gOutRefractMask;
+RWTexture2D<float4> gOutRefractPosW;
+RWTexture2D<float4> gOutRefractDirW;
+RWTexture2D<float4> gOutRefractNormalW;
+RWTexture2D<float4> gOutRefractDiffRough;
+RWTexture2D<float4> gOutRefractEmissive;
+
+RWTexture2D<float>  gOutMixedMask;
+RWTexture2D<float4> gOutMixedPosW;
+RWTexture2D<float4> gOutMixedDirW;
+RWTexture2D<float4> gOutMixedNormalW;
+RWTexture2D<float4> gOutMixedDiffRough;
+RWTexture2D<float4> gOutMixedEmissive;
+
 // Last frame data, format depends on accumulation mode.
 RWTexture2D<float4> gLastFrameSumColor;
 RWTexture2D<float4> gLastFrameSumPosW;
 RWTexture2D<float4> gLastFrameSumNormW;
-RWTexture2D<float>  gLastFrameSumMask;
 RWTexture2D<float4> gLastFrameSumViewW;
 RWTexture2D<float4> gLastFrameSumDiffRough;
 RWTexture2D<float4> gLastFrameSumEmissive;
 
+RWTexture2D<float>  gLastFrameSumReflectMask;
 RWTexture2D<float4> gLastFrameSumReflectPosW;
 RWTexture2D<float4> gLastFrameSumReflectDirW;
 RWTexture2D<float4> gLastFrameSumReflectNormalW;
 RWTexture2D<float4> gLastFrameSumReflectDiffRough;
 RWTexture2D<float4> gLastFrameSumReflectEmissive;
 RWTexture2D<float>  gLastFrameSumReflectDepth;
+
+RWTexture2D<float>  gLastFrameSumRefractMask;
+RWTexture2D<float4> gLastFrameSumRefractPosW;
+RWTexture2D<float4> gLastFrameSumRefractDirW;
+RWTexture2D<float4> gLastFrameSumRefractNormalW;
+RWTexture2D<float4> gLastFrameSumRefractDiffRough;
+RWTexture2D<float4> gLastFrameSumRefractEmissive;
+
+RWTexture2D<float>  gLastFrameSumMixedMask;
+RWTexture2D<float4> gLastFrameSumMixedPosW;
+RWTexture2D<float4> gLastFrameSumMixedDirW;
+RWTexture2D<float4> gLastFrameSumMixedNormalW;
+RWTexture2D<float4> gLastFrameSumMixedDiffRough;
+RWTexture2D<float4> gLastFrameSumMixedEmissive;
 
 void accumulate_func(float curVal, inout float lastFrameSum, inout float result, bool accumulate)
 {
@@ -179,15 +223,29 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(Color);
     handle(PosW);
     handle(NormW);
-    handleFloat(Mask);
     handle(ViewW);
     handle(DiffRough);
     handle(Emissive);
 
+    handleFloat(ReflectMask);
     handle(ReflectPosW);
     handle(ReflectDirW);
     handle(ReflectNormalW);
     handle(ReflectDiffRough);
     handle(ReflectEmissive);
     handleFloat(ReflectDepth);
+
+    handleFloat(RefractMask);
+    handle(RefractPosW);
+    handle(RefractDirW);
+    handle(RefractNormalW);
+    handle(RefractDiffRough);
+    handle(RefractEmissive);
+
+    handleFloat(MixedMask);
+    handle(MixedPosW);
+    handle(MixedDirW);
+    handle(MixedNormalW);
+    handle(MixedDiffRough);
+    handle(MixedEmissive);
 }

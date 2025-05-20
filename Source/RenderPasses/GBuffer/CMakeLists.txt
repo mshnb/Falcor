@@ -27,6 +27,11 @@ target_sources(GBuffer PRIVATE
     GBuffer/RefractGBufferRT.rt.slang
     GBuffer/RefractGBufferRT.slang
 
+    GBuffer/MixedGBufferRT.cpp
+    GBuffer/MixedGBufferRT.h
+    GBuffer/MixedGBufferRT.rt.slang
+    GBuffer/MixedGBufferRT.slang
+
     VBuffer/VBufferRaster.3d.slang
     VBuffer/VBufferRaster.cpp
     VBuffer/VBufferRaster.h
