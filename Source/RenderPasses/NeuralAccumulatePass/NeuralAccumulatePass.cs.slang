@@ -46,6 +46,8 @@ cbuffer PerFrameCB
 }
 
 Texture2D<float4> gColor;
+Texture2D<float4> gDirect;
+Texture2D<float4> gDirectColor;
 Texture2D<float4> gPosW;
 Texture2D<float4> gNormW;
 Texture2D<float4> gViewW;
@@ -75,6 +77,8 @@ Texture2D<float4> gMixedDiffRough;
 Texture2D<float4> gMixedEmissive;
 
 RWTexture2D<float4> gOutColor;
+RWTexture2D<float4> gOutDirect;
+RWTexture2D<float4> gOutDirectColor;
 RWTexture2D<float4> gOutPosW;
 RWTexture2D<float4> gOutNormW;
 RWTexture2D<float4> gOutViewW;
@@ -105,6 +109,8 @@ RWTexture2D<float4> gOutMixedEmissive;
 
 // Last frame data, format depends on accumulation mode.
 RWTexture2D<float4> gLastFrameSumColor;
+RWTexture2D<float4> gLastFrameSumDirect;
+RWTexture2D<float4> gLastFrameSumDirectColor;
 RWTexture2D<float4> gLastFrameSumPosW;
 RWTexture2D<float4> gLastFrameSumNormW;
 RWTexture2D<float4> gLastFrameSumViewW;
@@ -221,6 +227,8 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     float resultFloat;
 
     handle(Color);
+    handle(Direct);
+    handle(DirectColor);
     handle(PosW);
     handle(NormW);
     handle(ViewW);

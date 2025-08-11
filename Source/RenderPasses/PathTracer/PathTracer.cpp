@@ -78,9 +78,8 @@ namespace
     const std::string kOutputNRDDeltaTransmissionPosW = "nrdDeltaTransmissionPosW";
     const std::string kOutputNRDResidualRadianceHitDist = "nrdResidualRadianceHitDist";
 
-    //const std::string kOutputDirectColor = "directColor";
-    //const std::string kOutputDirect = "direct";
-    //const std::string kOutputSpecular = "specular";
+    const std::string kOutputDirect = "direct";
+    const std::string kOutputDirectColor = "directColor";
   
     const Falcor::ChannelList kOutputChannels =
     {
@@ -112,10 +111,8 @@ namespace
         { kOutputNRDDeltaTransmissionPosW,                  "",     "Output delta transmission position", true /* optional */, ResourceFormat::RGBA32Float },
         { kOutputNRDResidualRadianceHitDist,                "",     "Output residual color (linear) and hit distance", true /* optional */, ResourceFormat::RGBA32Float },
 
-        //{ kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float },
-        //{ kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float }
-        //{ kOutputSpecular,                                  "",     "Output specular color (rgb channel) and specular weight (alpha channel)", true /* optional */, ResourceFormat::RGBA32Float},
-
+        { kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float },
+        { kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float }
     };
 
     // Scripting options.
@@ -1121,8 +1118,8 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     var["viewDir"] = pViewDir; // Can be nullptr
     var["sampleCount"] = pSampleCount; // Can be nullptr
     var["outputColor"] = renderData.getTexture(kOutputColor);
-    //var["outputDirect"] = renderData.getTexture(kOutputDirect);
-    //var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
+    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
     
     if (useLightSampling && mpEmissiveSampler)
     {
@@ -1162,17 +1159,17 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
     {
         pRenderContext->clearUAV(pOutputColor->getUAV().get(), float4(0.f));
 
-        //if (renderData[kOutputDirect] != nullptr)
-        //{
-        //    const auto& pOutputDirect = renderData.getTexture(kOutputDirect);
-        //    pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
-        //}
+        if (renderData[kOutputDirect] != nullptr)
+        {
+            const auto& pOutputDirect = renderData.getTexture(kOutputDirect);
+            pRenderContext->clearUAV(pOutputDirect->getUAV().get(), float4(0.f));
+        }
 
-        //if (renderData[kOutputSpecular] != nullptr)
-        //{
-        //    const auto& pOutputSpecular = renderData.getTexture(kOutputSpecular);
-        //    pRenderContext->clearUAV(pOutputSpecular->getUAV().get(), float4(0.f));
-        //}
+        if (renderData[kOutputDirectColor] != nullptr)
+        {
+            const auto& pOutputDirectColor = renderData.getTexture(kOutputDirectColor);
+            pRenderContext->clearUAV(pOutputDirectColor->getUAV().get(), float4(0.f));
+        }
 
         // Set refresh flag if changes that affect the output have occured.
         // This is needed to ensure other passes get notified when the path tracer is enabled/disabled.
@@ -1250,9 +1247,9 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
         || renderData[kOutputNRDDeltaTransmissionPosW] != nullptr;
     if (mOutputNRDAdditionalData != prevOutputNRDAdditionalData) mRecompile = true;
 
-    // Check if NEGL buffers should be generated.
-    //mOutputNEGLData = renderData[kOutputDirect] != nullptr;
-    //mOutputNEGLData = renderData[kOutputSpecular] != nullptr;
+    // Check if splited buffers should be generated.
+    mOutputSplitData = renderData[kOutputDirect] != nullptr;
+    mOutputSplitData = renderData[kOutputDirectColor] != nullptr;
 
     // Enable pixel stats if rayCount or pathLength outputs are connected.
     if (renderData[kOutputRayCount] != nullptr || renderData[kOutputPathLength] != nullptr)
@@ -1341,7 +1338,7 @@ void PathTracer::tracePass(RenderContext* pRenderContext, const RenderData& rend
     tracePass.pProgram->addDefine("OUTPUT_GUIDE_DATA", mOutputGuideData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_DATA", mOutputNRDData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_ADDITIONAL_DATA", mOutputNRDAdditionalData ? "1" : "0");
-    // tracePass.pProgram->addDefine("OUTPUT_NEGL_DATA", mOutputNEGLData ? "1" : "0");
+    tracePass.pProgram->addDefine("OUTPUT_SPLIT_DATA", mOutputSplitData ? "1" : "0");
 
     // Bind global resources.
     auto var = tracePass.pVars->getRootVar();
@@ -1392,9 +1389,8 @@ void PathTracer::resolvePass(RenderContext* pRenderContext, const RenderData& re
     var["outputNRDDeltaTransmissionRadianceHitDist"] = renderData.getTexture(kOutputNRDDeltaTransmissionRadianceHitDist);
     var["outputNRDResidualRadianceHitDist"] = renderData.getTexture(kOutputNRDResidualRadianceHitDist);
 
-    //var["outputDirect"] = renderData.getTexture(kOutputDirect);
-    //var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
-    //var["outputSpecular"] = renderData.getTexture(kOutputSpecular);
+    var["outputDirect"] = renderData.getTexture(kOutputDirect);
+    var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
 
     if (mVarsChanged)
     {
@@ -1466,7 +1462,7 @@ DefineList PathTracer::StaticParams::getDefines(const PathTracer& owner) const
     defines.add("OUTPUT_GUIDE_DATA", "0");
     defines.add("OUTPUT_NRD_DATA", "0");
     defines.add("OUTPUT_NRD_ADDITIONAL_DATA", "0");
-    // defines.add("OUTPUT_NEGL_DATA", "0");
+    defines.add("OUTPUT_SPLIT_DATA", "0");
 
     return defines;
 }

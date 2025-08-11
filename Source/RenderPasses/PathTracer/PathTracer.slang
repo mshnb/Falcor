@@ -83,10 +83,9 @@ struct PathTracer
     RWStructuredBuffer<GuideData> sampleGuideData;  ///< Output per-sample guide data.
     NRDBuffers outputNRD;                           ///< Output NRD data.
 
-    //static const bool kOutputNEGLData = OUTPUT_NEGL_DATA;
-    //RWTexture2D<float4> outputDirect;
-    //RWTexture2D<float4> outputDirectColor;
-    //RWTexture2D<float4> outputSpecular;
+    static const bool kOutputSplitData = OUTPUT_SPLIT_DATA;
+    RWTexture2D<float4> outputDirect;
+    RWTexture2D<float4> outputDirectColor;
 
     RWTexture2D<float4> outputColor;                ///< Output color buffer if kSamplesPerPixel == 1.
 
@@ -1014,15 +1013,15 @@ struct PathTracer
                     bool visible = vq.traceVisibilityRay(ray);
                     if (visible) addToPathContribution(path, Lr);
 
-                    // if (kOutputNEGLData && isPrimaryHit) {
-                    //     if (visible) {
-                    //         path.visibility = 1.f;
-                    //         path.direct_shading_shadow += path.thp * Lr;
-                    //     } else {
-                    //         path.visibility = 0.f;
-                    //     }
-                    //     path.direct_shading += path.thp * Lr;
-                    // }
+                    if (kOutputSplitData && isPrimaryHit) {
+                        if (visible) {
+                            path.visibility = 1.f;
+                            path.direct += path.thp * Lr;
+                        } else {
+                            path.visibility = 0.f;
+                        }
+                        path.directColor += path.thp * Lr;
+                    }
 
                 }
             }
@@ -1212,7 +1211,18 @@ struct PathTracer
 
             outputNRD.sampleRadiance[outIdx] = data;
         }
+    }
 
+    void writeDirectOutput(const PathState path)
+    {
+        if (kOutputSplitData) {
+            assert(!any(isnan(path.L)));
+            assert(kSamplesPerPixel == 1);
+        
+            const uint2 pixel = path.getPixel();
+            outputDirect[pixel] = float4(path.direct, 1.f);
+            outputDirectColor[pixel] = float4(path.directColor, 1.f);
+        }
     }
 
 };

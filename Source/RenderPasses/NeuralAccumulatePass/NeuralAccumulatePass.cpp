@@ -54,6 +54,8 @@ namespace
 {
 Falcor::ChannelList kInputChannels = {
     {"color", "gColor", "Output color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
+    {"direct", "gDirect", "Output direct color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
+    {"directColor", "gDirectColor", "Output direct color without shadow (linear)", true /* optional */, ResourceFormat::RGBA32Float},
     {"posW", "gPosW", "Position in world space", true /* optional */, ResourceFormat::RGBA32Float},
     {"normW", "gNormW", "Shading normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
     {"viewW", "gViewW", "View direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
