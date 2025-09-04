@@ -48,6 +48,12 @@ cbuffer PerFrameCB
 Texture2D<float4> gColor;
 Texture2D<float4> gDirect;
 Texture2D<float4> gDirectColor;
+Texture2D<float4> gBounce0;
+Texture2D<float4> gBounce1;
+Texture2D<float4> gBounce2;
+Texture2D<float4> gBounce3;
+Texture2D<float4> gBounceOther;
+
 Texture2D<float4> gPosW;
 Texture2D<float4> gNormW;
 Texture2D<float4> gViewW;
@@ -68,6 +74,12 @@ Texture2D<float4> gRefractDirW;
 Texture2D<float4> gRefractNormalW;
 Texture2D<float4> gRefractDiffRough;
 Texture2D<float4> gRefractEmissive;
+Texture2D<float>  gRefractThroughMask;
+Texture2D<float4> gRefractThroughPosW;
+Texture2D<float4> gRefractThroughDirW;
+Texture2D<float4> gRefractThroughNormalW;
+Texture2D<float4> gRefractThroughDiffRough;
+Texture2D<float4> gRefractThroughEmissive;
 
 Texture2D<float>  gMixedMask;
 Texture2D<float4> gMixedPosW;
@@ -79,6 +91,12 @@ Texture2D<float4> gMixedEmissive;
 RWTexture2D<float4> gOutColor;
 RWTexture2D<float4> gOutDirect;
 RWTexture2D<float4> gOutDirectColor;
+RWTexture2D<float4> gOutBounce0;
+RWTexture2D<float4> gOutBounce1;
+RWTexture2D<float4> gOutBounce2;
+RWTexture2D<float4> gOutBounce3;
+RWTexture2D<float4> gOutBounceOther;
+
 RWTexture2D<float4> gOutPosW;
 RWTexture2D<float4> gOutNormW;
 RWTexture2D<float4> gOutViewW;
@@ -99,6 +117,12 @@ RWTexture2D<float4> gOutRefractDirW;
 RWTexture2D<float4> gOutRefractNormalW;
 RWTexture2D<float4> gOutRefractDiffRough;
 RWTexture2D<float4> gOutRefractEmissive;
+RWTexture2D<float>  gOutRefractThroughMask;
+RWTexture2D<float4> gOutRefractThroughPosW;
+RWTexture2D<float4> gOutRefractThroughDirW;
+RWTexture2D<float4> gOutRefractThroughNormalW;
+RWTexture2D<float4> gOutRefractThroughDiffRough;
+RWTexture2D<float4> gOutRefractThroughEmissive;
 
 RWTexture2D<float>  gOutMixedMask;
 RWTexture2D<float4> gOutMixedPosW;
@@ -111,6 +135,12 @@ RWTexture2D<float4> gOutMixedEmissive;
 RWTexture2D<float4> gLastFrameSumColor;
 RWTexture2D<float4> gLastFrameSumDirect;
 RWTexture2D<float4> gLastFrameSumDirectColor;
+RWTexture2D<float4> gLastFrameSumBounce0;
+RWTexture2D<float4> gLastFrameSumBounce1;
+RWTexture2D<float4> gLastFrameSumBounce2;
+RWTexture2D<float4> gLastFrameSumBounce3;
+RWTexture2D<float4> gLastFrameSumBounceOther;
+
 RWTexture2D<float4> gLastFrameSumPosW;
 RWTexture2D<float4> gLastFrameSumNormW;
 RWTexture2D<float4> gLastFrameSumViewW;
@@ -131,6 +161,12 @@ RWTexture2D<float4> gLastFrameSumRefractDirW;
 RWTexture2D<float4> gLastFrameSumRefractNormalW;
 RWTexture2D<float4> gLastFrameSumRefractDiffRough;
 RWTexture2D<float4> gLastFrameSumRefractEmissive;
+RWTexture2D<float>  gLastFrameSumRefractThroughMask;
+RWTexture2D<float4> gLastFrameSumRefractThroughPosW;
+RWTexture2D<float4> gLastFrameSumRefractThroughDirW;
+RWTexture2D<float4> gLastFrameSumRefractThroughNormalW;
+RWTexture2D<float4> gLastFrameSumRefractThroughDiffRough;
+RWTexture2D<float4> gLastFrameSumRefractThroughEmissive;
 
 RWTexture2D<float>  gLastFrameSumMixedMask;
 RWTexture2D<float4> gLastFrameSumMixedPosW;
@@ -229,6 +265,12 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(Color);
     handle(Direct);
     handle(DirectColor);
+    handle(Bounce0);
+    handle(Bounce1);
+    handle(Bounce2);
+    handle(Bounce3);
+    handle(BounceOther);
+
     handle(PosW);
     handle(NormW);
     handle(ViewW);
@@ -249,6 +291,12 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(RefractNormalW);
     handle(RefractDiffRough);
     handle(RefractEmissive);
+    handleFloat(RefractThroughMask);
+    handle(RefractThroughPosW);
+    handle(RefractThroughDirW);
+    handle(RefractThroughNormalW);
+    handle(RefractThroughDiffRough);
+    handle(RefractThroughEmissive);
 
     handleFloat(MixedMask);
     handle(MixedPosW);

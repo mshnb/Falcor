@@ -59,7 +59,13 @@ RWTexture2D<float4> gRefractPosW;
 RWTexture2D<float4> gRefractNormalW;
 RWTexture2D<float4> gRefractDiffRough;
 RWTexture2D<float4> gRefractEmissive;
-// RWTexture2D<float> gRefractDepth;
+
+RWTexture2D<float> gRefractThroughMask;
+RWTexture2D<float4> gRefractThroughDirW;
+RWTexture2D<float4> gRefractThroughPosW;
+RWTexture2D<float4> gRefractThroughNormalW;
+RWTexture2D<float4> gRefractThroughDiffRough;
+RWTexture2D<float4> gRefractThroughEmissive;
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -316,6 +322,37 @@ struct RefractGBufferRT
         {
             if (is_valid(gVBuffer))
                 gVBuffer[pixel] = hit.getData();
+
+            if (is_valid(gRefractMask))
+                gRefractMask[pixel] = 0.f;
+            if (is_valid(gRefractDirW))
+                gRefractDirW[pixel] = {};
+            if (is_valid(gRefractPosW))
+                gRefractPosW[pixel] = {};
+            if (is_valid(gRefractNormalW))
+                gRefractNormalW[pixel] = {};
+            if (is_valid(gRefractDiffRough))
+                gRefractDiffRough[pixel] = {};
+            if (is_valid(gRefractEmissive))
+                gRefractEmissive[pixel] = {};
+        }
+        else if (rayData.bounce == 1)
+        {
+            // record buffers
+            const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
+
+            if (is_valid(gRefractMask) && is_valid(gRefractThroughMask))
+                gRefractMask[pixel] = gRefractThroughMask[pixel];
+            if (is_valid(gRefractDirW))
+                gRefractDirW[pixel] = float4(rayDir, 0.f);
+            if (is_valid(gRefractPosW))
+                gRefractPosW[pixel] = gbuf.posW;
+            if (is_valid(gRefractNormalW))
+                gRefractNormalW[pixel] = gbuf.normW;
+            if (is_valid(gRefractDiffRough))
+                gRefractDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+            if (is_valid(gRefractEmissive))
+                gRefractEmissive[pixel] = gbuf.emissive;
         }
 
         if (rayData.bounce < MAX_BOUNCES-1)
@@ -332,8 +369,8 @@ struct RefractGBufferRT
                 float weight = max(0.f, 1.f - evalFresnelDielectric(eta, wi.z, cosThetaT));
                 if (weight > 0.f)
                 {
-                    if (is_valid(gRefractMask))
-                        gRefractMask[pixel] = rayData.bounce == 0 ? weight : (gRefractMask[pixel] * weight);
+                    if (is_valid(gRefractThroughMask))
+                        gRefractThroughMask[pixel] = rayData.bounce == 0 ? weight : (gRefractThroughMask[pixel] * weight);
 
                     float3 wo = float3(-wi.x * eta, -wi.y * eta, -cosThetaT);
                     rayData.hitPosW = sd.computeRayOrigin(false);
@@ -343,18 +380,18 @@ struct RefractGBufferRT
                 }
             }
 
-            if (is_valid(gRefractMask))
-                gRefractMask[pixel] = 0.f;
-            if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = {};
-            if (is_valid(gRefractPosW))
-                gRefractPosW[pixel] = {};
-            if (is_valid(gRefractNormalW))
-                gRefractNormalW[pixel] = {};
-            if (is_valid(gRefractDiffRough))
-                gRefractDiffRough[pixel] = {};
-            if (is_valid(gRefractEmissive))
-                gRefractEmissive[pixel] = {};
+            if (is_valid(gRefractThroughMask))
+                gRefractThroughMask[pixel] = 0.f;
+            if (is_valid(gRefractThroughDirW))
+                gRefractThroughDirW[pixel] = {};
+            if (is_valid(gRefractThroughPosW))
+                gRefractThroughPosW[pixel] = {};
+            if (is_valid(gRefractThroughNormalW))
+                gRefractThroughNormalW[pixel] = {};
+            if (is_valid(gRefractThroughDiffRough))
+                gRefractThroughDiffRough[pixel] = {};
+            if (is_valid(gRefractThroughEmissive))
+                gRefractThroughEmissive[pixel] = {};
 
             rayData.exit = true;
         }
@@ -364,18 +401,18 @@ struct RefractGBufferRT
             // record buffers
             const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
-            // if (is_valid(gRefractMask))
-            //     gRefractMask[pixel] = 1.f;
-            if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = float4(rayDir, 0.f);
-            if (is_valid(gRefractPosW))
-                gRefractPosW[pixel] = gbuf.posW;
-            if (is_valid(gRefractNormalW))
-                gRefractNormalW[pixel] = gbuf.normW;
-            if (is_valid(gRefractDiffRough))
-                gRefractDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
-            if (is_valid(gRefractEmissive))
-                gRefractEmissive[pixel] = gbuf.emissive;
+            // if (is_valid(gRefractThroughMask))
+            //     gRefractThroughMask[pixel] = 1.f;
+            if (is_valid(gRefractThroughDirW))
+                gRefractThroughDirW[pixel] = float4(rayDir, 0.f);
+            if (is_valid(gRefractThroughPosW))
+                gRefractThroughPosW[pixel] = gbuf.posW;
+            if (is_valid(gRefractThroughNormalW))
+                gRefractThroughNormalW[pixel] = gbuf.normW;
+            if (is_valid(gRefractThroughDiffRough))
+                gRefractThroughDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+            if (is_valid(gRefractThroughEmissive))
+                gRefractThroughEmissive[pixel] = gbuf.emissive;
 
             rayData.exit = true;
         }
@@ -397,16 +434,7 @@ struct RefractGBufferRT
         if (is_valid(gVBuffer))
             gVBuffer[pixel] = {};
 
-        // if (is_valid(gRefractMask))
-        //     gRefractMask[pixel] = 0.f;
-        if (is_valid(gRefractPosW))
-            gRefractPosW[pixel] = {};
-        if (is_valid(gRefractNormalW))
-            gRefractNormalW[pixel] = {};
-        if (is_valid(gRefractDiffRough))
-            gRefractDiffRough[pixel] = {};
-
-        if (rayData.bounce == 0)
+        if (rayData.bounce < 2)
         {
             if (is_valid(gRefractMask))
                 gRefractMask[pixel] = 0.f;
@@ -414,25 +442,48 @@ struct RefractGBufferRT
                 gRefractDirW[pixel] = {};
             if (is_valid(gRefractEmissive))
                 gRefractEmissive[pixel] = {};
+            if (is_valid(gRefractPosW))
+                gRefractPosW[pixel] = {};
+            if (is_valid(gRefractNormalW))
+                gRefractNormalW[pixel] = {};
+            if (is_valid(gRefractDiffRough))
+                gRefractDiffRough[pixel] = {};
+        }
+
+        if (is_valid(gRefractThroughPosW))
+            gRefractThroughPosW[pixel] = {};
+        if (is_valid(gRefractThroughNormalW))
+            gRefractThroughNormalW[pixel] = {};
+        if (is_valid(gRefractThroughDiffRough))
+            gRefractThroughDiffRough[pixel] = {};
+
+        if (rayData.bounce == 0)
+        {
+            if (is_valid(gRefractThroughMask))
+                gRefractThroughMask[pixel] = 0.f;
+            if (is_valid(gRefractThroughDirW))
+                gRefractThroughDirW[pixel] = {};
+            if (is_valid(gRefractThroughEmissive))
+                gRefractThroughEmissive[pixel] = {};
         }
         else
         {
             float throughput = 1.f;
-            if (is_valid(gRefractMask))
+            if (is_valid(gRefractThroughMask))
             {
-                throughput = gRefractMask[pixel];
-                gRefractMask[pixel] = 0.f;
+                throughput = gRefractThroughMask[pixel];
+                gRefractThroughMask[pixel] = 0.f;
             }
 
-            if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = float4(rayDir, 1.f);
+            if (is_valid(gRefractThroughDirW))
+                gRefractThroughDirW[pixel] = float4(rayDir, 1.f);
 
             float3 emission = float3(0.0f);
             if (USE_ENV_LIGHT)
                 emission = envMapSampler.eval(rayDir);
 
-            if (is_valid(gRefractEmissive))
-                gRefractEmissive[pixel] = float4(throughput * emission, 1.f);
+            if (is_valid(gRefractThroughEmissive))
+                gRefractThroughEmissive[pixel] = float4(throughput * emission, 1.f);
         }
 
         rayData.exit = true;

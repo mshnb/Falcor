@@ -60,7 +60,13 @@ const ChannelList kGBufferExtraChannels = {
     { "refractNormalW",             "gRefractNormalW",              "Refract normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
     { "refractDiffRough",           "gRefractDiffRough",            "Refract diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "refractEmissive",            "gRefractEmissive",             "Refract Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
-    // { "refractDepth",               "gRefractDepth",                "Refract depth",                                        true /* optional */, ResourceFormat::R32Float     },
+
+    { "refractThroughMask",         "gRefractThroughMask",          "Refract through mask",                                         true /* optional */, ResourceFormat::R32Float     },
+    { "refractThroughDirW",         "gRefractThroughDirW",          "Refract through direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractThroughPosW",         "gRefractThroughPosW",          "Refract through position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractThroughNormalW",      "gRefractThroughNormalW",       "Refract through normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractThroughDiffRough",    "gRefractThroughDiffRough",     "Refract through diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
+    { "refractThroughEmissive",     "gRefractThroughEmissive",      "Refract through Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
 
     // clang-format on
 };

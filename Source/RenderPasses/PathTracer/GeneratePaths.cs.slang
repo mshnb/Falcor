@@ -80,6 +80,11 @@ struct PathGenerator
     RWTexture2D<float4> outputColor;                ///< Output color buffer if kSamplesPerPixel == 1.
     RWTexture2D<float4> outputDirect;               ///< Output color buffer if kSamplesPerPixel == 1.
     RWTexture2D<float4> outputDirectColor;          ///< Output color buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputBounce0;              ///< Output bounce 0 buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputBounce1;              ///< Output bounce 1 buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputBounce2;              ///< Output bounce 2 buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputBounce3;              ///< Output bounce 3 buffer if kSamplesPerPixel == 1.
+    RWTexture2D<float4> outputBounceOther;          ///< Output bounce other buffer if kSamplesPerPixel == 1.
 
     // Render settings that depend on the scene.
     // TODO: Move into scene defines.
@@ -88,6 +93,8 @@ struct PathGenerator
 
     // Additional specialization.
     static const bool kOutputGuideData = OUTPUT_GUIDE_DATA;
+    static const bool kOutputSplitData = OUTPUT_SPLIT_DATA;
+    static const bool kOutputBounceData = OUTPUT_BOUNCE_DATA;
 
     /** Entry point for path generator.
         \param[in] tileID Tile ID in x and y on screen.
@@ -221,8 +228,20 @@ struct PathGenerator
         if (kSamplesPerPixel == 1)
         {
             outputColor[pixel] = float4(color, 1.f);
-            outputDirect[pixel] = float4(color, 1.f);
-            outputDirectColor[pixel] = float4(color, 1.f);
+            if (kOutputSplitData)
+            {
+                outputDirect[pixel] = float4(color, 1.f);
+                outputDirectColor[pixel] = float4(color, 1.f);
+            }
+
+            if (kOutputBounceData)
+            {
+                outputBounce0[pixel] = float4(color, 1.f);
+                outputBounce1[pixel] = float4(float3(0), 1.f);
+                outputBounce2[pixel] = float4(float3(0), 1.f);
+                outputBounce3[pixel] = float4(float3(0), 1.f);
+                outputBounceOther[pixel] = float4(float3(0), 1.f);
+            }
         }
 
         for (uint i = 0; i < spp; i++)

@@ -82,10 +82,15 @@ struct PathTracer
     RWStructuredBuffer<ColorType> sampleColor;      ///< Output per-sample color if kSamplesPerPixel != 1.
     RWStructuredBuffer<GuideData> sampleGuideData;  ///< Output per-sample guide data.
     NRDBuffers outputNRD;                           ///< Output NRD data.
-
-    static const bool kOutputSplitData = OUTPUT_SPLIT_DATA;
+    
     RWTexture2D<float4> outputDirect;
     RWTexture2D<float4> outputDirectColor;
+
+    RWTexture2D<float4> outputBounce0;
+    RWTexture2D<float4> outputBounce1;
+    RWTexture2D<float4> outputBounce2;
+    RWTexture2D<float4> outputBounce3;
+    RWTexture2D<float4> outputBounceOther;
 
     RWTexture2D<float4> outputColor;                ///< Output color buffer if kSamplesPerPixel == 1.
 
@@ -103,6 +108,8 @@ struct PathTracer
 
     // Additional specialization.
     static const bool kOutputGuideData = OUTPUT_GUIDE_DATA;
+    static const bool kOutputSplitData = OUTPUT_SPLIT_DATA;
+    static const bool kOutputBounceData = OUTPUT_BOUNCE_DATA;
 
     /** Types of samplable lights.
     */
@@ -1022,7 +1029,6 @@ struct PathTracer
                         }
                         path.directColor += path.thp * Lr;
                     }
-
                 }
             }
         }
@@ -1213,7 +1219,7 @@ struct PathTracer
         }
     }
 
-    void writeDirectOutput(const PathState path)
+    void writeSplitOutput(const PathState path)
     {
         if (kOutputSplitData) {
             assert(!any(isnan(path.L)));
@@ -1223,6 +1229,35 @@ struct PathTracer
             outputDirect[pixel] = float4(path.direct, 1.f);
             outputDirectColor[pixel] = float4(path.directColor, 1.f);
         }
+    }
+
+    void writeBounceOutput(const PathState path)
+    {
+        if (!kOutputBounceData)
+            return;
+
+        assert(!any(isnan(path.L)));
+        assert(kSamplesPerPixel == 1);
+        
+        const uint2 pixel = path.getPixel();
+        // const uint idx = path.getVertexIndex() - 1;
+
+        outputBounce0[pixel] = float4(float3(0), 1.f);
+        outputBounce1[pixel] = float4(float3(0), 1.f);
+        outputBounce2[pixel] = float4(float3(0), 1.f);
+        outputBounce3[pixel] = float4(float3(0), 1.f);
+        outputBounceOther[pixel] = float4(float3(0), 1.f);
+
+        if (path.scatterType[0] == (uint)BounceType::Diffuse)
+            outputBounce0[pixel] = float4(path.L, 1.f);
+        else if (path.scatterType[0] == (uint)BounceType::Specular)
+            outputBounce1[pixel] = float4(path.L, 1.f);
+        else if (path.scatterType[0] == (uint)BounceType::Transmission && path.scatterType[1] == (uint)BounceType::Transmission)
+            outputBounce2[pixel] = float4(path.L, 1.f);
+        else if (path.scatterType[0] == (uint)BounceType::Transmission && path.scatterType[1] == (uint)BounceType::Specular && path.scatterType[2] == (uint)BounceType::Transmission)
+            outputBounce3[pixel] = float4(path.L, 1.f);
+        else
+            outputBounceOther[pixel] = float4(path.L, 1.f);
     }
 
 };
