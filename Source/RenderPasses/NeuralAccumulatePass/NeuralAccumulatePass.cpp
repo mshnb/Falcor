@@ -62,6 +62,7 @@ Falcor::ChannelList kInputChannels = {
     {"bounce3", "gBounce3", "Output bounce 3 color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
     {"bounceOther", "gBounceOther", "Output bounce other color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
 
+    {"mask", "gMask", "Mask", true /* optional */, ResourceFormat::R32Float},
     {"posW", "gPosW", "Position in world space", true /* optional */, ResourceFormat::RGBA32Float},
     {"normW", "gNormW", "Shading normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
     {"viewW", "gViewW", "View direction in world space", true /* optional */, ResourceFormat::RGBA32Float},

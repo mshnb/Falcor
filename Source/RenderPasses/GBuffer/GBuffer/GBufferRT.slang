@@ -58,7 +58,6 @@ RWTexture2D<float4> gEmissive;
 RWTexture2D<float4> gViewW;
 RWTexture2D<uint> gTime;
 RWTexture2D<float> gDisocclusion;
-RWTexture2D<float> gMask;
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -317,8 +316,6 @@ struct GBufferRT
             gEmissive[pixel] = gbuf.emissive;
         if (is_valid(gDisocclusion))
             gDisocclusion[pixel] = disocclusion;
-        if (is_valid(gMask))
-            gMask[pixel] = 1.0f;
 
         if (is_valid(gLinearZ))
         {
@@ -420,8 +417,6 @@ struct GBufferRT
             gEmissive[pixel] = {};
         if (is_valid(gDisocclusion))
             gDisocclusion[pixel] = 0.f;
-        if (is_valid(gMask))
-            gMask[pixel] = 0.0f;
     }
 
     void writeAux(uint2 pixel, const Ray ray)

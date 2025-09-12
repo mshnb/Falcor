@@ -206,6 +206,10 @@ interface IMaterialInstance
         \return Volume properties.
     */
     VolumeProperties getVolumeProperties();
+
+    float4 getScatterWeights(const ShadingData sd);
+    float3 getReflectionDir(const ShadingData sd);
+    float3 getRefractionDir(const ShadingData sd);
 }
 
 [open]
@@ -225,5 +229,21 @@ struct MaterialInstanceBase
         return result;
 
     }
+
+    float4 getScatterWeights(const ShadingData sd)
+    {
+        return float4(0.f);
+    }
+
+    float3 getReflectionDir(const ShadingData sd)
+    {
+        return float3(0.f);
+    }
+
+    float3 getRefractionDir(const ShadingData sd)
+    {
+        return float3(0.f);
+    }
+
 }
 

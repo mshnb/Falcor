@@ -463,6 +463,8 @@ struct PathTracer
         // Handle reflection events.
         if (bs.isLobe(LobeType::Reflection))
         {
+            path.setScatterType(bs.isLobe(LobeType::SpecularReflection) ? BounceType::Specular : BounceType::Diffuse);
+
             // We classify specular events as diffuse if the roughness is above some threshold.
             float roughness = mi.getProperties(sd).roughness;
             bool isDiffuse = bs.isLobe(LobeType::DiffuseReflection) || roughness > params.specularRoughnessThreshold;
@@ -487,6 +489,7 @@ struct PathTracer
         // Handle transmission events.
         if (bs.isLobe(LobeType::Transmission))
         {
+            path.setScatterType(BounceType::Transmission);
             path.incrementBounces(BounceType::Transmission);
             path.setTransmission();
 

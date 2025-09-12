@@ -54,6 +54,7 @@ Texture2D<float4> gBounce2;
 Texture2D<float4> gBounce3;
 Texture2D<float4> gBounceOther;
 
+Texture2D<float>  gMask;
 Texture2D<float4> gPosW;
 Texture2D<float4> gNormW;
 Texture2D<float4> gViewW;
@@ -97,6 +98,7 @@ RWTexture2D<float4> gOutBounce2;
 RWTexture2D<float4> gOutBounce3;
 RWTexture2D<float4> gOutBounceOther;
 
+RWTexture2D<float>  gOutMask;
 RWTexture2D<float4> gOutPosW;
 RWTexture2D<float4> gOutNormW;
 RWTexture2D<float4> gOutViewW;
@@ -141,6 +143,7 @@ RWTexture2D<float4> gLastFrameSumBounce2;
 RWTexture2D<float4> gLastFrameSumBounce3;
 RWTexture2D<float4> gLastFrameSumBounceOther;
 
+RWTexture2D<float>  gLastFrameSumMask;
 RWTexture2D<float4> gLastFrameSumPosW;
 RWTexture2D<float4> gLastFrameSumNormW;
 RWTexture2D<float4> gLastFrameSumViewW;
@@ -271,6 +274,7 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(Bounce3);
     handle(BounceOther);
 
+    handleFloat(Mask);
     handle(PosW);
     handle(NormW);
     handle(ViewW);
@@ -291,6 +295,7 @@ void accumulateSingle(uint3 dispatchThreadId: SV_DispatchThreadID)
     handle(RefractNormalW);
     handle(RefractDiffRough);
     handle(RefractEmissive);
+
     handleFloat(RefractThroughMask);
     handle(RefractThroughPosW);
     handle(RefractThroughDirW);

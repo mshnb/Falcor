@@ -188,7 +188,10 @@ struct PathState
         const uint shift = (uint)type << 3;
         // We assume that bounce counters cannot overflow.
         bounceCounters += (1 << shift);
+    }
 
+    [mutating] void setScatterType(BounceType type)
+    {
         uint idx = getVertexIndex() - 1;
         if (idx < 4)
             scatterType[idx] = (uint)type;

@@ -62,6 +62,7 @@ RWTexture2D<float4> gViewW;
 RWTexture2D<uint> gTime;
 RWTexture2D<float> gDisocclusion;
 RWTexture2D<float4> gDiffRough;
+RWTexture2D<float> gMask;
 
 RWTexture2D<float> gReflectMask;
 RWTexture2D<float4> gReflectDirW;
@@ -396,18 +397,19 @@ struct ReflectGBufferRT
             if(is_valid(gDiffRough))
                 gDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
 
-            const uint lobeType = mi.getLobeTypes(sd);
-            const bool hasReflection = (lobeType & (uint)LobeType::Reflection) != 0;
+            // diffuseR, diffuseT, specularR, specularT
+            float4 weights = mi.getScatterWeights(sd);
 
-            if (hasReflection)
+            if (is_valid(gMask))
+                gMask[pixel] = weights[0];
+
+            if (weights[2] > 0.f)
             {
                 if (is_valid(gReflectMask))
-                    gReflectMask[pixel] = 1.f;
+                    gReflectMask[pixel] = weights[2];
 
-                float3 wi = sd.frame.toLocal(-rayDir);
-                float3 wo = float3(-wi.x, -wi.y, wi.z);
                 rayData.hitPosW = sd.computeRayOrigin();
-                rayData.nextDirW = normalize(sd.frame.fromLocal(wo));
+                rayData.nextDirW = mi.getReflectionDir(sd);
                 return;
             }
             else
@@ -432,8 +434,6 @@ struct ReflectGBufferRT
         }
         else if (rayData.bounce == MAX_BOUNCES - 1)
         {
-            // if (is_valid(gReflectMask))
-            //     gReflectMask[pixel] = 1.f;
             if (is_valid(gReflectDirW))
                 gReflectDirW[pixel] = float4(rayDir, 1.f);
             if (is_valid(gReflectPosW))
@@ -514,6 +514,8 @@ struct ReflectGBufferRT
                 gDisocclusion[pixel] = 0.f;
             if (is_valid(gDiffRough))
                 gDiffRough[pixel] = {};
+            if (is_valid(gMask))
+                gMask[pixel] = 0.f;
 
             if (is_valid(gReflectMask))
                 gReflectMask[pixel] = 0.f;
@@ -532,8 +534,9 @@ struct ReflectGBufferRT
         }
         else if (rayData.bounce == 1)
         {
-            if (is_valid(gReflectMask))
-                gReflectMask[pixel] = 0.f;
+            // if (is_valid(gReflectMask))
+            //     gReflectMask[pixel] = 0.f;
+
             if (is_valid(gReflectDirW))
                 gReflectDirW[pixel] = float4(rayDir, 1.f);
             if (is_valid(gReflectPosW))

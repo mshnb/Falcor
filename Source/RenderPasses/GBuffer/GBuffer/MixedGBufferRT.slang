@@ -307,81 +307,54 @@ struct MixedGBufferRT
         let mi = gScene.materials.getMaterialInstance(sd, lod, hints);
         let bsdfProperties = mi.getProperties(sd);
 
-        const uint lobeType = mi.getLobeTypes(sd);
-        const bool hasTransmission = (lobeType & (uint)LobeType::Transmission) != 0;
+        // diffuseR, diffuseT, specularR, specularT
+        float4 weights = mi.getScatterWeights(sd);
 
         // Encode hit information.
         if (rayData.bounce == 0)
         {
             if (is_valid(gVBuffer))
                 gVBuffer[pixel] = hit.getData();
-        }
 
-        // MAX_BOUNCES should be 3
-        if (rayData.bounce < MAX_BOUNCES-1)
-        {
-            if (hasTransmission)
+            if (weights[3] > 0.f)
             {
-                ShadingFrame sf = sd.frame;
-                flipShadingNormal(sd, sf);
+                if (is_valid(gMixedMask))
+                    gMixedMask[pixel] = weights[3];
 
-                float3 wi = sf.toLocal(-rayDir);
-
-                float eta = bsdfProperties.eta;
-                float cosThetaT = 0.f;
-                float weight = max(0.f, 1.f - evalFresnelDielectric(eta, wi.z, cosThetaT));
-
-                // reflect
-                if (rayData.bounce == 1)
-                {
-                    if (is_valid(gMixedMask))
-                        gMixedMask[pixel] = gMixedMask[pixel] * (1.f - weight);
-
-                    float3 wo = float3(-wi.x, -wi.y, wi.z);
-                    rayData.hitPosW = sd.computeRayOrigin();
-                    rayData.nextDirW = normalize(sf.fromLocal(wo));
-                    return;
-                }
-                else
-                {
-                    if (weight > 0.f)
-                    {
-
-                        if (is_valid(gMixedMask))
-                            gMixedMask[pixel] = rayData.bounce == 0 ? weight : (gMixedMask[pixel] * weight);
-
-                        float3 wo = float3(-wi.x * eta, -wi.y * eta, -cosThetaT);
-                        rayData.hitPosW = sd.computeRayOrigin(false);
-                        rayData.nextDirW = normalize(sf.fromLocal(wo));
-                        return;
-                    }    
-                }
+                rayData.hitPosW = sd.computeRayOrigin(false);
+                rayData.nextDirW = mi.getRefractionDir(sd);
+                return;
             }
-
-            if (is_valid(gMixedMask))
-                gMixedMask[pixel] = 0.f;
-            if (is_valid(gMixedDirW))
-                gMixedDirW[pixel] = {};
-            if (is_valid(gMixedPosW))
-                gMixedPosW[pixel] = {};
-            if (is_valid(gMixedNormalW))
-                gMixedNormalW[pixel] = {};
-            if (is_valid(gMixedDiffRough))
-                gMixedDiffRough[pixel] = {};
-            if (is_valid(gMixedEmissive))
-                gMixedEmissive[pixel] = {};
-
-            rayData.exit = true;
         }
+        else if (rayData.bounce == 1)
+        {
+            if (weights[2] > 0.f)
+            {
+                if (is_valid(gMixedMask))
+                    gMixedMask[pixel] *= weights[2];
 
+                rayData.hitPosW = sd.computeRayOrigin();
+                rayData.nextDirW = mi.getReflectionDir(sd);
+                return;
+            }
+        }
+        else if (rayData.bounce == 2)
+        {
+            if (weights[3] > 0.f)
+            {
+                if (is_valid(gMixedMask))
+                    gMixedMask[pixel] *= weights[3];
 
-        if (rayData.bounce == MAX_BOUNCES-1)
+                rayData.hitPosW = sd.computeRayOrigin(false);
+                rayData.nextDirW = mi.getRefractionDir(sd);
+                return;
+            }
+        }
+        else if (rayData.bounce == 3)
         {
             // record buffers
             const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
-            // if (is_valid(gMixedMask))
-            //     gMixedMask[pixel] = 1.f;
             if (is_valid(gMixedDirW))
                 gMixedDirW[pixel] = float4(rayDir, 0.f);
             if (is_valid(gMixedPosW))
@@ -394,7 +367,23 @@ struct MixedGBufferRT
                 gMixedEmissive[pixel] = gbuf.emissive;
 
             rayData.exit = true;
+            return;
         }
+
+        if (is_valid(gMixedMask))
+            gMixedMask[pixel] = 0.f;
+        if (is_valid(gMixedDirW))
+            gMixedDirW[pixel] = {};
+        if (is_valid(gMixedPosW))
+            gMixedPosW[pixel] = {};
+        if (is_valid(gMixedNormalW))
+            gMixedNormalW[pixel] = {};
+        if (is_valid(gMixedDiffRough))
+            gMixedDiffRough[pixel] = {};
+        if (is_valid(gMixedEmissive))
+            gMixedEmissive[pixel] = {};
+
+        rayData.exit = true;
     }
 
     float2 computeMotionVectorBackground(const uint2 pixel, const float3 rayOrigin, const float3 rayDir)
@@ -415,6 +404,7 @@ struct MixedGBufferRT
 
         // if (is_valid(gMixedMask))
         //     gMixedMask[pixel] = 0.f;
+
         if (is_valid(gMixedPosW))
             gMixedPosW[pixel] = {};
         if (is_valid(gMixedNormalW))
@@ -433,12 +423,8 @@ struct MixedGBufferRT
         }
         else
         {
-            float throughput = 1.f;
-            if (is_valid(gMixedMask))
-            {
-                throughput = gMixedMask[pixel];
-                gMixedMask[pixel] = 0.f;
-            }
+            // if (is_valid(gMixedMask))
+            //     gMixedMask[pixel] = 0.f;
 
             if (is_valid(gMixedDirW))
                 gMixedDirW[pixel] = float4(rayDir, 1.f);
@@ -448,7 +434,7 @@ struct MixedGBufferRT
                 emission = envMapSampler.eval(rayDir);
 
             if (is_valid(gMixedEmissive))
-                gMixedEmissive[pixel] = float4(throughput * emission, 1.f);
+                gMixedEmissive[pixel] = float4(emission, 1.f);
         }
 
         rayData.exit = true;

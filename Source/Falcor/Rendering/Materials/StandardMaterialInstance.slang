@@ -34,6 +34,7 @@ __exported import DiffRendering.GradientIOWrapper;
 import Utils.Math.MathHelpers;
 import Rendering.Volumes.PhaseFunction;
 import Scene.Material.VolumeProperties;
+import Rendering.Materials.Fresnel;
 
 /** Implementation of Falcor's standard surface BSDF.
 
@@ -256,6 +257,45 @@ struct StandardMaterialInstance : MaterialInstanceBase, IMaterialInstance
             if (min(wi.z, wo.z) < kMinCosTheta) return 0.f;
             return wo.z * M_1_PI; // pdf = cos(theta) / pi
         }
+    }
+
+    float4 getScatterWeights(const ShadingData sd)
+    {
+        const uint lobeType = getLobeTypes(sd);
+        const bool hasTransmission = (lobeType & (uint)LobeType::Transmission) != 0;
+
+        float3 wi = sf.toLocal(sd.V);
+
+        StandardBSDF bsdf = StandardBSDF(wi, sd.mtl, data);
+        float4 weight = float4(bsdf.pDiffuseReflection, bsdf.pDiffuseTransmission, bsdf.pSpecularReflection, bsdf.pSpecularTransmission);
+
+        if (hasTransmission)
+        {
+            float cosThetaT = 0.f;
+            float F = evalFresnelDielectric(data.eta, wi.z, cosThetaT);
+
+            weight[2] += F * weight[3];
+            weight[3] *= max(0.f, 1.f - F);
+        }
+
+        return weight;
+    }
+
+    float3 getReflectionDir(const ShadingData sd)
+    {
+        float3 wi = sf.toLocal(sd.V);
+        float3 wo = float3(-wi.x, -wi.y, wi.z);
+        return normalize(sf.fromLocal(wo));
+    }
+
+    float3 getRefractionDir(const ShadingData sd)
+    {
+        float3 wi = sf.toLocal(sd.V);
+        float eta = data.eta;
+        float cosThetaT = 0.f;
+        float F = evalFresnelDielectric(eta, wi.z, cosThetaT);
+        float3 wo = float3(-wi.x * eta, -wi.y * eta, -cosThetaT);
+        return normalize(sf.fromLocal(wo));
     }
 
 };
