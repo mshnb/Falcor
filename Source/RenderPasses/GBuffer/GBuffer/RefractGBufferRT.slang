@@ -376,6 +376,19 @@ struct RefractGBufferRT
                 if (is_valid(gRefractEmissive))
                     gRefractEmissive[pixel] = gbuf.emissive;
 
+                if (is_valid(gRefractThroughMask))
+                    gRefractThroughMask[pixel] = 0.f;
+                if (is_valid(gRefractThroughDirW))
+                    gRefractThroughDirW[pixel] = {};
+                if (is_valid(gRefractThroughPosW))
+                    gRefractThroughPosW[pixel] = {};
+                if (is_valid(gRefractThroughNormalW))
+                    gRefractThroughNormalW[pixel] = {};
+                if (is_valid(gRefractThroughDiffRough))
+                    gRefractThroughDiffRough[pixel] = {};
+                if (is_valid(gRefractThroughEmissive))
+                    gRefractThroughEmissive[pixel] = {};
+
                 rayData.exit = true;
                 return;
             }
