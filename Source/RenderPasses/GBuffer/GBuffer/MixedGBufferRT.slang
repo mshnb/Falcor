@@ -340,15 +340,15 @@ struct MixedGBufferRT
         }
         else if (rayData.bounce == 2)
         {
-            if (weights[3] > 0.f)
-            {
-                if (is_valid(gMixedMask))
-                    gMixedMask[pixel] *= weights[3];
 
-                rayData.hitPosW = sd.computeRayOrigin(false);
-                rayData.nextDirW = mi.getRefractionDir(sd);
-                return;
-            }
+            if (is_valid(gMixedMask))
+                gMixedMask[pixel] *= weights[3];
+
+            // force trace
+            rayData.hitPosW = sd.computeRayOrigin(false);
+            rayData.nextDirW = mi.getRefractionDir(sd);
+
+            return;
         }
         else if (rayData.bounce == 3)
         {
