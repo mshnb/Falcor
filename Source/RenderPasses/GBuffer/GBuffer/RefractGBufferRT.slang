@@ -335,56 +335,34 @@ struct RefractGBufferRT
         }
         else if (rayData.bounce == 1)
         {
+            // record buffers
+            const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
+
+            if (is_valid(gRefractThroughMask))
+                gRefractThroughMask[pixel] = gRefractMask[pixel] * weights[3];
+
+            if (is_valid(gRefractMask))
+                gRefractMask[pixel] *= 1.f - weights[2] - weights[3];
+            if (is_valid(gRefractDirW))
+                gRefractDirW[pixel] = float4(rayDir, 0.f);
+            if (is_valid(gRefractPosW))
+                gRefractPosW[pixel] = gbuf.posW;
+            if (is_valid(gRefractNormalW))
+                gRefractNormalW[pixel] = gbuf.normW;
+            if (is_valid(gRefractDiffRough))
+                gRefractDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+            if (is_valid(gRefractEmissive))
+                gRefractEmissive[pixel] = gbuf.emissive;
+
             if (weights[3] > 0.f)
             {
-                if (is_valid(gRefractThroughMask))
-                    gRefractThroughMask[pixel] = gRefractMask[pixel] * weights[3];
-
                 rayData.hitPosW = sd.computeRayOrigin(false);
                 rayData.nextDirW = mi.getRefractionDir(sd);
-
-                if (is_valid(gRefractMask))
-                    gRefractMask[pixel] = 0.f;
-                if (is_valid(gRefractDirW))
-                    gRefractDirW[pixel] = {};
-                if (is_valid(gRefractPosW))
-                    gRefractPosW[pixel] = {};
-                if (is_valid(gRefractNormalW))
-                    gRefractNormalW[pixel] = {};
-                if (is_valid(gRefractDiffRough))
-                    gRefractDiffRough[pixel] = {};
-                if (is_valid(gRefractEmissive))
-                    gRefractEmissive[pixel] = {};
-
-                return;
             }
             else
-            {
-                // record buffers
-                const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
+                rayData.exit = true;
 
-                if (is_valid(gRefractMask))
-                    gRefractMask[pixel] *= weights[0] + weights[1] + weights[2];
-                if (is_valid(gRefractDirW))
-                    gRefractDirW[pixel] = float4(rayDir, 0.f);
-                if (is_valid(gRefractPosW))
-                    gRefractPosW[pixel] = gbuf.posW;
-                if (is_valid(gRefractNormalW))
-                    gRefractNormalW[pixel] = gbuf.normW;
-                if (is_valid(gRefractDiffRough))
-                    gRefractDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
-                if (is_valid(gRefractEmissive))
-                    gRefractEmissive[pixel] = gbuf.emissive;
-
-                // force trace
-                rayData.hitPosW = sd.computeRayOrigin(false);
-                rayData.nextDirW = mi.getRefractionDir(sd);
-
-                if (is_valid(gRefractThroughMask))
-                    gRefractThroughMask[pixel] = 0.f;
-
-                return;
-            }
+            return;
         }
         else if (rayData.bounce == 2)
         {

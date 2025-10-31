@@ -487,7 +487,7 @@ struct Scheduler
             nextHit(path);
         }
 
-        gPathTracer.writeBounceOutput(path);
+        //gPathTracer.writeBounceOutput(path);
 
 #if !defined(DELTA_REFLECTION_PASS) && !defined(DELTA_TRANSMISSION_PASS)
         gPathTracer.writeOutput(path);

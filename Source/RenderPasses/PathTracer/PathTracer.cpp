@@ -81,11 +81,11 @@ namespace
     const std::string kOutputDirect = "direct";
     const std::string kOutputDirectColor = "directColor";
 
-    const std::string kOutputBounce0 = "bounce0";
-    const std::string kOutputBounce1 = "bounce1";
-    const std::string kOutputBounce2 = "bounce2";
-    const std::string kOutputBounce3 = "bounce3";
-    const std::string kOutputBounceOther = "bounceOther";
+    //const std::string kOutputBounce0 = "bounce0";
+    //const std::string kOutputBounce1 = "bounce1";
+    //const std::string kOutputBounce2 = "bounce2";
+    //const std::string kOutputBounce3 = "bounce3";
+    //const std::string kOutputBounceOther = "bounceOther";
 
     const Falcor::ChannelList kOutputChannels =
     {
@@ -120,11 +120,11 @@ namespace
         { kOutputDirect,                                    "",     "Output direct shading", true /* optional */, ResourceFormat::RGBA32Float },
         { kOutputDirectColor,                               "",     "Output direct color (no shadow)", true /* optional */, ResourceFormat::RGBA32Float },
 
-        { kOutputBounce0, "", "Output radiance of bounce 0", true /* optional */, ResourceFormat::RGBA32Float },
-        { kOutputBounce1, "", "Output radiance of bounce 1", true /* optional */, ResourceFormat::RGBA32Float },
-        { kOutputBounce2, "", "Output radiance of bounce 2", true /* optional */, ResourceFormat::RGBA32Float },
-        { kOutputBounce3, "", "Output radiance of bounce 3", true /* optional */, ResourceFormat::RGBA32Float },
-        { kOutputBounceOther, "", "Output radiance of bounce other", true /* optional */, ResourceFormat::RGBA32Float }
+        //{ kOutputBounce0, "", "Output radiance of bounce 0", true /* optional */, ResourceFormat::RGBA32Float },
+        //{ kOutputBounce1, "", "Output radiance of bounce 1", true /* optional */, ResourceFormat::RGBA32Float },
+        //{ kOutputBounce2, "", "Output radiance of bounce 2", true /* optional */, ResourceFormat::RGBA32Float },
+        //{ kOutputBounce3, "", "Output radiance of bounce 3", true /* optional */, ResourceFormat::RGBA32Float },
+        //{ kOutputBounceOther, "", "Output radiance of bounce other", true /* optional */, ResourceFormat::RGBA32Float }
     };
 
     // Scripting options.
@@ -1133,11 +1133,11 @@ void PathTracer::bindShaderData(const ShaderVar& var, const RenderData& renderDa
     var["outputDirect"] = renderData.getTexture(kOutputDirect);
     var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
 
-    var["outputBounce0"] = renderData.getTexture(kOutputBounce0);
-    var["outputBounce1"] = renderData.getTexture(kOutputBounce1);
-    var["outputBounce2"] = renderData.getTexture(kOutputBounce2);
-    var["outputBounce3"] = renderData.getTexture(kOutputBounce3);
-    var["outputBounceOther"] = renderData.getTexture(kOutputBounceOther);
+    //var["outputBounce0"] = renderData.getTexture(kOutputBounce0);
+    //var["outputBounce1"] = renderData.getTexture(kOutputBounce1);
+    //var["outputBounce2"] = renderData.getTexture(kOutputBounce2);
+    //var["outputBounce3"] = renderData.getTexture(kOutputBounce3);
+    //var["outputBounceOther"] = renderData.getTexture(kOutputBounceOther);
 
     if (useLightSampling && mpEmissiveSampler)
     {
@@ -1189,35 +1189,35 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
             pRenderContext->clearUAV(pOutputDirectColor->getUAV().get(), float4(0.f));
         }
 
-        if (renderData[kOutputBounce0] != nullptr)
-        {
-            const auto& pOutputBounce = renderData.getTexture(kOutputBounce0);
-            pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputBounce0] != nullptr)
+        //{
+        //    const auto& pOutputBounce = renderData.getTexture(kOutputBounce0);
+        //    pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
+        //}
 
-        if (renderData[kOutputBounce1] != nullptr)
-        {
-            const auto& pOutputBounce = renderData.getTexture(kOutputBounce1);
-            pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputBounce1] != nullptr)
+        //{
+        //    const auto& pOutputBounce = renderData.getTexture(kOutputBounce1);
+        //    pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
+        //}
 
-        if (renderData[kOutputBounce2] != nullptr)
-        {
-            const auto& pOutputBounce = renderData.getTexture(kOutputBounce2);
-            pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputBounce2] != nullptr)
+        //{
+        //    const auto& pOutputBounce = renderData.getTexture(kOutputBounce2);
+        //    pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
+        //}
 
-        if (renderData[kOutputBounce3] != nullptr)
-        {
-            const auto& pOutputBounce = renderData.getTexture(kOutputBounce3);
-            pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputBounce3] != nullptr)
+        //{
+        //    const auto& pOutputBounce = renderData.getTexture(kOutputBounce3);
+        //    pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
+        //}
 
-        if (renderData[kOutputBounceOther] != nullptr)
-        {
-            const auto& pOutputBounce = renderData.getTexture(kOutputBounceOther);
-            pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
-        }
+        //if (renderData[kOutputBounceOther] != nullptr)
+        //{
+        //    const auto& pOutputBounce = renderData.getTexture(kOutputBounceOther);
+        //    pRenderContext->clearUAV(pOutputBounce->getUAV().get(), float4(0.f));
+        //}
 
         // Set refresh flag if changes that affect the output have occured.
         // This is needed to ensure other passes get notified when the path tracer is enabled/disabled.
@@ -1299,9 +1299,9 @@ bool PathTracer::beginFrame(RenderContext* pRenderContext, const RenderData& ren
     mOutputSplitData = renderData[kOutputDirect] != nullptr
         || renderData[kOutputDirectColor] != nullptr;
 
-    mOutputBounceData = renderData[kOutputBounce0] != nullptr || renderData[kOutputBounce1] != nullptr ||
-                        renderData[kOutputBounce2] != nullptr || renderData[kOutputBounce3] != nullptr ||
-                        renderData[kOutputBounceOther] != nullptr;
+    //mOutputBounceData = renderData[kOutputBounce0] != nullptr || renderData[kOutputBounce1] != nullptr ||
+    //                    renderData[kOutputBounce2] != nullptr || renderData[kOutputBounce3] != nullptr ||
+    //                    renderData[kOutputBounceOther] != nullptr;
 
     // Enable pixel stats if rayCount or pathLength outputs are connected.
     if (renderData[kOutputRayCount] != nullptr || renderData[kOutputPathLength] != nullptr)
@@ -1366,7 +1366,7 @@ void PathTracer::generatePaths(RenderContext* pRenderContext, const RenderData& 
     mpGeneratePaths->addDefine("OUTPUT_NRD_DATA", mOutputNRDData ? "1" : "0");
     mpGeneratePaths->addDefine("OUTPUT_NRD_ADDITIONAL_DATA", mOutputNRDAdditionalData ? "1" : "0");
     mpGeneratePaths->addDefine("OUTPUT_SPLIT_DATA", mOutputSplitData ? "1" : "0");
-    mpGeneratePaths->addDefine("OUTPUT_BOUNCE_DATA", mOutputBounceData ? "1" : "0");
+    //mpGeneratePaths->addDefine("OUTPUT_BOUNCE_DATA", mOutputBounceData ? "1" : "0");
 
     // Bind resources.
     auto var = mpGeneratePaths->getRootVar()["CB"]["gPathGenerator"];
@@ -1393,7 +1393,7 @@ void PathTracer::tracePass(RenderContext* pRenderContext, const RenderData& rend
     tracePass.pProgram->addDefine("OUTPUT_NRD_DATA", mOutputNRDData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_NRD_ADDITIONAL_DATA", mOutputNRDAdditionalData ? "1" : "0");
     tracePass.pProgram->addDefine("OUTPUT_SPLIT_DATA", mOutputSplitData ? "1" : "0");
-    tracePass.pProgram->addDefine("OUTPUT_BOUNCE_DATA", mOutputBounceData ? "1" : "0");
+    //tracePass.pProgram->addDefine("OUTPUT_BOUNCE_DATA", mOutputBounceData ? "1" : "0");
 
     // Bind global resources.
     auto var = tracePass.pVars->getRootVar();
@@ -1447,11 +1447,11 @@ void PathTracer::resolvePass(RenderContext* pRenderContext, const RenderData& re
     var["outputDirect"] = renderData.getTexture(kOutputDirect);
     var["outputDirectColor"] = renderData.getTexture(kOutputDirectColor);
 
-    var["outputBounce0"] = renderData.getTexture(kOutputBounce0);
-    var["outputBounce1"] = renderData.getTexture(kOutputBounce1);
-    var["outputBounce2"] = renderData.getTexture(kOutputBounce2);
-    var["outputBounce3"] = renderData.getTexture(kOutputBounce3);
-    var["outputBounceOther"] = renderData.getTexture(kOutputBounceOther);
+    //var["outputBounce0"] = renderData.getTexture(kOutputBounce0);
+    //var["outputBounce1"] = renderData.getTexture(kOutputBounce1);
+    //var["outputBounce2"] = renderData.getTexture(kOutputBounce2);
+    //var["outputBounce3"] = renderData.getTexture(kOutputBounce3);
+    //var["outputBounceOther"] = renderData.getTexture(kOutputBounceOther);
 
     if (mVarsChanged)
     {
@@ -1524,7 +1524,7 @@ DefineList PathTracer::StaticParams::getDefines(const PathTracer& owner) const
     defines.add("OUTPUT_NRD_DATA", "0");
     defines.add("OUTPUT_NRD_ADDITIONAL_DATA", "0");
     defines.add("OUTPUT_SPLIT_DATA", "0");
-    defines.add("OUTPUT_BOUNCE_DATA", "0");
+    //defines.add("OUTPUT_BOUNCE_DATA", "0");
 
     return defines;
 }
