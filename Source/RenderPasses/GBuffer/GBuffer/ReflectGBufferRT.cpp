@@ -71,7 +71,6 @@ const ChannelList kGBufferExtraChannels = {
     { "reflectNormalW",             "gReflectNormalW",              "Reflect normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectDiffRough",           "gReflectDiffRough",            "Reflect diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
     { "reflectEmissive",            "gReflectEmissive",             "Reflect Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
-    { "reflectDepth",               "gReflectDepth",                "Reflect depth",                                        true /* optional */, ResourceFormat::R32Float     },
 
     // clang-format on
 };

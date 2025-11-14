@@ -356,7 +356,7 @@ struct MixedGBufferRT
             const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
             if (is_valid(gMixedDirW))
-                gMixedDirW[pixel] = float4(rayDir, 0.f);
+                gMixedDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
             if (is_valid(gMixedPosW))
                 gMixedPosW[pixel] = gbuf.posW;
             if (is_valid(gMixedNormalW))
@@ -423,11 +423,8 @@ struct MixedGBufferRT
         }
         else
         {
-            // if (is_valid(gMixedMask))
-            //     gMixedMask[pixel] = 0.f;
-
             if (is_valid(gMixedDirW))
-                gMixedDirW[pixel] = float4(rayDir, 1.f);
+                gMixedDirW[pixel] = float4(rayDir, 0.f);
 
             float3 emission = float3(0.0f);
             if (USE_ENV_LIGHT)

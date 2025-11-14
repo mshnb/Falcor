@@ -70,7 +70,6 @@ RWTexture2D<float4> gReflectPosW;
 RWTexture2D<float4> gReflectNormalW;
 RWTexture2D<float4> gReflectDiffRough;
 RWTexture2D<float4> gReflectEmissive;
-RWTexture2D<float> gReflectDepth;
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -426,8 +425,6 @@ struct ReflectGBufferRT
                     gReflectDiffRough[pixel] = {};
                 if (is_valid(gReflectEmissive))
                     gReflectEmissive[pixel] = {};
-                if (is_valid(gReflectDepth))
-                    gReflectDepth[pixel] = 0.f;
 
                 rayData.exit = true;
             }
@@ -435,7 +432,7 @@ struct ReflectGBufferRT
         else if (rayData.bounce == MAX_BOUNCES - 1)
         {
             if (is_valid(gReflectDirW))
-                gReflectDirW[pixel] = float4(rayDir, 1.f);
+                gReflectDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = float4(sd.posW, 1.f);
             if (is_valid(gReflectNormalW))
@@ -444,8 +441,6 @@ struct ReflectGBufferRT
                 gReflectDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
             if(is_valid(gReflectEmissive))
                 gReflectEmissive[pixel] = gbuf.emissive;
-            if (is_valid(gReflectDepth))
-                gReflectDepth[pixel] = length(sd.posW - rayOrigin);
 
             rayData.exit = true;
         }
@@ -529,16 +524,11 @@ struct ReflectGBufferRT
                 gReflectDiffRough[pixel] = {};
             if (is_valid(gReflectEmissive))
                 gReflectEmissive[pixel] = {};
-            if (is_valid(gReflectDepth))
-                gReflectDepth[pixel] = 0.f;
         }
         else if (rayData.bounce == 1)
         {
-            // if (is_valid(gReflectMask))
-            //     gReflectMask[pixel] = 0.f;
-
             if (is_valid(gReflectDirW))
-                gReflectDirW[pixel] = float4(rayDir, 1.f);
+                gReflectDirW[pixel] = float4(rayDir, 0.f);
             if (is_valid(gReflectPosW))
                 gReflectPosW[pixel] = {};
             if (is_valid(gReflectNormalW))
@@ -547,8 +537,6 @@ struct ReflectGBufferRT
                 gReflectDiffRough[pixel] = {};
             if (is_valid(gReflectEmissive))
                 gReflectEmissive[pixel] = float4(emission, 1.0f);
-            if (is_valid(gReflectDepth))
-                gReflectDepth[pixel] = 0.f;
         }
 
         rayData.exit = true;

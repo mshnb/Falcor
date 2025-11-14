@@ -344,7 +344,7 @@ struct RefractGBufferRT
             if (is_valid(gRefractMask))
                 gRefractMask[pixel] *= 1.f - weights[2] - weights[3];
             if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = float4(rayDir, 0.f);
+                gRefractDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
             if (is_valid(gRefractPosW))
                 gRefractPosW[pixel] = gbuf.posW;
             if (is_valid(gRefractNormalW))
@@ -370,7 +370,7 @@ struct RefractGBufferRT
             const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
             if (is_valid(gRefractThroughDirW))
-                gRefractThroughDirW[pixel] = float4(rayDir, 0.f);
+                gRefractThroughDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
             if (is_valid(gRefractThroughPosW))
                 gRefractThroughPosW[pixel] = gbuf.posW;
             if (is_valid(gRefractThroughNormalW))
@@ -463,11 +463,8 @@ struct RefractGBufferRT
         }
         else
         {
-            // if (is_valid(gRefractThroughMask))
-            //     gRefractThroughMask[pixel] = 0.f;
-
             if (is_valid(gRefractThroughDirW))
-                gRefractThroughDirW[pixel] = float4(rayDir, 1.f);
+                gRefractThroughDirW[pixel] = float4(rayDir, 0.f);
 
             float3 emission = float3(0.0f);
             if (USE_ENV_LIGHT)
