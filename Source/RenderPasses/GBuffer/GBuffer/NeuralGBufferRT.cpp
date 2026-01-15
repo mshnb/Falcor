@@ -27,17 +27,18 @@
  **************************************************************************/
 #include "Falcor.h"
 #include "RenderGraph/RenderPassStandardFlags.h"
-#include "RefractGBufferRT.h"
+#include "NeuralGBufferRT.h"
 
 namespace
 {
-const std::string kProgramRaytraceFile = "RenderPasses/GBuffer/GBuffer/RefractGBufferRT.rt.slang";
+const std::string kProgramRaytraceFile = "RenderPasses/GBuffer/GBuffer/NeuralGBufferRT.rt.slang";
 //const std::string kProgramComputeFile = "RenderPasses/GBuffer/GBuffer/GBufferRT.cs.slang";
 
 // Scripting options.
 const char kUseTraceRayInline[] = "useTraceRayInline";
 const char kUseDOF[] = "useDOF";
 const char kMaxBounces[] = "maxBounces";
+const char kPathNotation[] = "pathNotation";
 
 // Ray tracing settings that affect the traversal stack size. Set as small as possible.
 const uint32_t kMaxPayloadSizeBytes = 64;
@@ -54,30 +55,23 @@ const ChannelList kGBufferExtraChannels = {
     { "time",                       "gTime",                        "Per-pixel execution time",                                true /* optional */, ResourceFormat::R32Uint      },
     { "viewW",                      "gViewW",                       "View direction in world space",                           true /* optional */, ResourceFormat::RGBA32Float  }, // TODO: Switch to packed 2x16-bit snorm format.
 
-    { "refractMask",                "gRefractMask",                 "Refract mask",                                         true /* optional */, ResourceFormat::R32Float     },
-    { "refractDirW",                "gRefractDirW",                 "Refract direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractPosW",                "gRefractPosW",                 "Refract position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractNormalW",             "gRefractNormalW",              "Refract normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractDiffRough",           "gRefractDiffRough",            "Refract diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractEmissive",            "gRefractEmissive",             "Refract Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
-
-    { "refractThroughMask",         "gRefractThroughMask",          "Refract through mask",                                         true /* optional */, ResourceFormat::R32Float     },
-    { "refractThroughDirW",         "gRefractThroughDirW",          "Refract through direction in world space",                     true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractThroughPosW",         "gRefractThroughPosW",          "Refract through position in world space",                      true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractThroughNormalW",      "gRefractThroughNormalW",       "Refract through normal in world space",                        true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractThroughDiffRough",    "gRefractThroughDiffRough",     "Refract through diffuse albedo and roughness",                 true /* optional */, ResourceFormat::RGBA32Float  },
-    { "refractThroughEmissive",     "gRefractThroughEmissive",      "Refract through Emissive color",                               true /* optional */, ResourceFormat::RGBA32Float  },
+    { "bounceMask",                  "gBounceMask",                   "Bounce mask",                                              true /* optional */, ResourceFormat::R32Float     },
+    { "bounceDirW",                  "gBounceDirW",                   "Bounce direction in world space",                          true /* optional */, ResourceFormat::RGBA32Float  },
+    { "bouncePosW",                  "gBouncePosW",                   "Bounce position in world space",                           true /* optional */, ResourceFormat::RGBA32Float  },
+    { "bounceNormalW",               "gBounceNormalW",                "Bounce normal in world space",                             true /* optional */, ResourceFormat::RGBA32Float  },
+    { "bounceDiffRough",             "gBounceDiffRough",              "Bounce diffuse albedo and roughness",                      true /* optional */, ResourceFormat::RGBA32Float  },
+    { "bounceEmissive",              "gBounceEmissive",               "Bounce Emissive color",                                    true /* optional */, ResourceFormat::RGBA32Float  },
 
     // clang-format on
 };
 } // namespace
 
-RefractGBufferRT::RefractGBufferRT(ref<Device> pDevice, const Properties& props) : GBuffer(pDevice)
+NeuralGBufferRT::NeuralGBufferRT(ref<Device> pDevice, const Properties& props) : GBuffer(pDevice)
 {
     if (!mpDevice->isShaderModelSupported(ShaderModel::SM6_5))
-        FALCOR_THROW("RefractGBufferRT requires Shader Model 6.5 support.");
+        FALCOR_THROW("NeuralGBufferRT requires Shader Model 6.5 support.");
     if (!mpDevice->isFeatureSupported(Device::SupportedFeatures::RaytracingTier1_1))
-        FALCOR_THROW("RefractGBufferRT requires Raytracing Tier 1.1 support.");
+        FALCOR_THROW("NeuralGBufferRT requires Raytracing Tier 1.1 support.");
 
     parseProperties(props);
 
@@ -85,7 +79,7 @@ RefractGBufferRT::RefractGBufferRT(ref<Device> pDevice, const Properties& props)
     mpSampleGenerator = SampleGenerator::create(mpDevice, SAMPLE_GENERATOR_DEFAULT);
 }
 
-RenderPassReflection RefractGBufferRT::reflect(const CompileData& compileData)
+RenderPassReflection NeuralGBufferRT::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
     const uint2 sz = RenderPassHelpers::calculateIOSize(mOutputSizeSelection, mFixedOutputSize, compileData.defaultTexDims);
@@ -98,7 +92,7 @@ RenderPassReflection RefractGBufferRT::reflect(const CompileData& compileData)
     return reflector;
 }
 
-void RefractGBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void NeuralGBufferRT::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     GBuffer::execute(pRenderContext, renderData);
 
@@ -118,7 +112,7 @@ void RefractGBufferRT::execute(RenderContext* pRenderContext, const RenderData& 
 
     if (!pOutput)
     {
-        logWarning("RefractGBufferRT::execute() - Render pass has no connected outputs. Is this intended?");
+        logWarning("NeuralGBufferRT::execute() - Render pass has no connected outputs. Is this intended?");
         return;
     }
     FALCOR_ASSERT(pOutput);
@@ -160,7 +154,7 @@ void RefractGBufferRT::execute(RenderContext* pRenderContext, const RenderData& 
     mFrameCount++;
 }
 
-void RefractGBufferRT::renderUI(Gui::Widgets& widget)
+void NeuralGBufferRT::renderUI(Gui::Widgets& widget)
 {
     // Render the base class UI first.
     GBuffer::renderUI(widget);
@@ -190,16 +184,19 @@ void RefractGBufferRT::renderUI(Gui::Widgets& widget)
     );
 }
 
-Properties RefractGBufferRT::getProperties() const
+Properties NeuralGBufferRT::getProperties() const
 {
     Properties props = GBuffer::getProperties();
     props[kLODMode] = mLODMode;
     props[kUseTraceRayInline] = mUseTraceRayInline;
     props[kUseDOF] = mUseDOF;
+    props[kMaxBounces] = mMaxBounces;
+    props[kPathNotation] = mPathNotation;
+
     return props;
 }
 
-void RefractGBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
+void NeuralGBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>& pScene)
 {
     GBuffer::setScene(pRenderContext, pScene);
 
@@ -209,7 +206,7 @@ void RefractGBufferRT::setScene(RenderContext* pRenderContext, const ref<Scene>&
         mpEnvMapSampler = std::make_unique<EnvMapSampler>(mpDevice, mpScene->getEnvMap());
 }
 
-void RefractGBufferRT::parseProperties(const Properties& props)
+void NeuralGBufferRT::parseProperties(const Properties& props)
 {
     GBuffer::parseProperties(props);
 
@@ -221,20 +218,45 @@ void RefractGBufferRT::parseProperties(const Properties& props)
             mUseTraceRayInline = value;
         else if (key == kUseDOF)
             mUseDOF = value;
-        else if (key == kMaxBounces)
-            mMaxBounces = value;
+        //else if (key == kMaxBounces)
+        //    mMaxBounces = value;
+        else if (key == kPathNotation)
+        {
+            mMaxBounces = 1;
+            mPathNotation = value.operator std::string();
+            uint32_t path_notation = 0;
+            for (uint32_t i = 0; i < (uint32_t)mPathNotation.length(); ++i)
+            {
+                const char c = mPathNotation[i];
+                if (c == 'r' || c == 'R')
+                {
+                    // Specular
+                    path_notation += (uint32_t)0 << i;
+                    mMaxBounces += 1;
+                }
+
+                else if (c == 't' || c == 'T')
+                {
+                    // Transmission
+                    path_notation += (uint32_t)1 << i;
+                    mMaxBounces += 1;
+                }
+            }
+
+            mPathNotation = std::to_string((uint32_t)path_notation);
+        }
         // TODO: Check for unparsed fields, including those parsed in base classes.
     }
 }
 
-void RefractGBufferRT::recreatePrograms()
+void NeuralGBufferRT::recreatePrograms()
 {
     mRaytrace.pProgram = nullptr;
     mRaytrace.pVars = nullptr;
     mpComputePass = nullptr;
 }
 
-void RefractGBufferRT::executeRaytrace(RenderContext* pRenderContext, const RenderData& renderData)
+void NeuralGBufferRT::executeRaytrace(RenderContext* pRenderContext, const RenderData& renderData)
 {
     if (!mRaytrace.pProgram || !mRaytrace.pVars)
     {
@@ -302,7 +324,7 @@ void RefractGBufferRT::executeRaytrace(RenderContext* pRenderContext, const Rend
     mpScene->raytrace(pRenderContext, mRaytrace.pProgram.get(), mRaytrace.pVars, uint3(mFrameDim, 1));
 }
 
-void RefractGBufferRT::executeCompute(RenderContext* pRenderContext, const RenderData& renderData)
+void NeuralGBufferRT::executeCompute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // Create compute pass.
     if (!mpComputePass)
@@ -333,7 +355,7 @@ void RefractGBufferRT::executeCompute(RenderContext* pRenderContext, const Rende
     mpComputePass->execute(pRenderContext, uint3(mFrameDim, 1));
 }
 
-DefineList RefractGBufferRT::getShaderDefines(const RenderData& renderData) const
+DefineList NeuralGBufferRT::getShaderDefines(const RenderData& renderData) const
 {
     DefineList defines;
     defines.add("COMPUTE_DEPTH_OF_FIELD", mComputeDOF ? "1" : "0");
@@ -342,6 +364,7 @@ DefineList RefractGBufferRT::getShaderDefines(const RenderData& renderData) cons
     defines.add("ADJUST_SHADING_NORMALS", mAdjustShadingNormals ? "1" : "0");
     defines.add("USE_ENV_LIGHT", mpScene->useEnvLight() ? "1" : "0");
     defines.add("MAX_BOUNCES", std::to_string(mMaxBounces));
+    defines.add("PATH_NOTATION", mPathNotation);
 
     // Setup ray flags.
     RayFlags rayFlags = RayFlags::None;
@@ -358,7 +381,7 @@ DefineList RefractGBufferRT::getShaderDefines(const RenderData& renderData) cons
     return defines;
 }
 
-void RefractGBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderData)
+void NeuralGBufferRT::bindShaderData(const ShaderVar& var, const RenderData& renderData)
 {
     FALCOR_ASSERT(mpScene && mpScene->getCamera());
     var["gGBufferRT"]["frameDim"] = mFrameDim;
@@ -366,11 +389,11 @@ void RefractGBufferRT::bindShaderData(const ShaderVar& var, const RenderData& re
     var["gGBufferRT"]["frameCount"] = mFrameCount;
     var["gGBufferRT"]["screenSpacePixelSpreadAngle"] = mpScene->getCamera()->computeScreenSpacePixelSpreadAngle(mFrameDim.y);
 
-    const AABB& aabb = mpScene->getSceneBounds();
-    const float3 sceneExtent = aabb.extent();
-    var["gGBufferRT"]["sceneScale"] = 0.5f / aabb.radius();
-    var["gGBufferRT"]["sceneRadius"] = aabb.radius();
-    var["gGBufferRT"]["sceneMinPoint"] = aabb.minPoint;
+    //const AABB& aabb = mpScene->getSceneBounds();
+    //const float3 sceneExtent = aabb.extent();
+    //var["gGBufferRT"]["sceneScale"] = 0.5f / aabb.radius();
+    //var["gGBufferRT"]["sceneRadius"] = aabb.radius();
+    //var["gGBufferRT"]["sceneMinPoint"] = aabb.minPoint;
 
     if (mpScene->useEnvLight())
         mpEnvMapSampler->bindShaderData(var["gGBufferRT"]["envMapSampler"]);

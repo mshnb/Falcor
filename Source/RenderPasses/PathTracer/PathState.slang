@@ -102,7 +102,6 @@ struct PathState
     float3      direct;
     float3      directColor;
     float       visibility;             ///< Visibility of the shadow ray. For rendering direct shadow buffer.
-    uint4       scatterType;
 
     GuideData   guideData;              ///< Denoiser guide data.
     InteriorList interiorList;          ///< Interior list. Keeping track of a stack of materials with medium properties.
@@ -188,13 +187,6 @@ struct PathState
         const uint shift = (uint)type << 3;
         // We assume that bounce counters cannot overflow.
         bounceCounters += (1 << shift);
-    }
-
-    [mutating] void setScatterType(BounceType type)
-    {
-        uint idx = getVertexIndex() - 1;
-        if (idx < 4)
-            scatterType[idx] = (uint)type;
     }
 
     uint2 getPixel() { return uint2(id, id >> 12) & 0xfff; }

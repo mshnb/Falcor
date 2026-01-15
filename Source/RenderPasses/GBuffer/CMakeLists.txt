@@ -17,20 +17,10 @@ target_sources(GBuffer PRIVATE
     GBuffer/GBufferRT.rt.slang
     GBuffer/GBufferRT.slang
 
-    GBuffer/ReflectGBufferRT.cpp
-    GBuffer/ReflectGBufferRT.h
-    GBuffer/ReflectGBufferRT.rt.slang
-    GBuffer/ReflectGBufferRT.slang
-
-    GBuffer/RefractGBufferRT.cpp
-    GBuffer/RefractGBufferRT.h
-    GBuffer/RefractGBufferRT.rt.slang
-    GBuffer/RefractGBufferRT.slang
-
-    GBuffer/MixedGBufferRT.cpp
-    GBuffer/MixedGBufferRT.h
-    GBuffer/MixedGBufferRT.rt.slang
-    GBuffer/MixedGBufferRT.slang
+    GBuffer/NeuralGBufferRT.cpp
+    GBuffer/NeuralGBufferRT.h
+    GBuffer/NeuralGBufferRT.rt.slang
+    GBuffer/NeuralGBufferRT.slang
 
     VBuffer/VBufferRaster.3d.slang
     VBuffer/VBufferRaster.cpp

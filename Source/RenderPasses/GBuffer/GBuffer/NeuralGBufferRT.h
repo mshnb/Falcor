@@ -30,6 +30,7 @@
 #include "Utils/Sampling/SampleGenerator.h"
 #include "Rendering/Lights/EnvMapSampler.h"
 #include "Rendering/Materials/TexLODTypes.slang"
+#include <string>
 
 using namespace Falcor;
 
@@ -37,17 +38,17 @@ using namespace Falcor;
  * Refractive Ray traced G-buffer pass.
  * This pass renders a fixed set of G-buffer channels using ray tracing.
  */
-class MixedGBufferRT : public GBuffer
+class NeuralGBufferRT : public GBuffer
 {
 public:
-    FALCOR_PLUGIN_CLASS(MixedGBufferRT, "MixedGBufferRT", "Refractive Ray traced G-buffer generation pass.");
+    FALCOR_PLUGIN_CLASS(NeuralGBufferRT, "NeuralGBufferRT", "Neural Ray traced G-buffer generation pass.");
 
-    static ref<MixedGBufferRT> create(ref<Device> pDevice, const Properties& props)
+    static ref<NeuralGBufferRT> create(ref<Device> pDevice, const Properties& props)
     {
-        return make_ref<MixedGBufferRT>(pDevice, props);
+        return make_ref<NeuralGBufferRT>(pDevice, props);
     }
 
-    MixedGBufferRT(ref<Device> pDevice, const Properties& props);
+    NeuralGBufferRT(ref<Device> pDevice, const Properties& props);
 
     RenderPassReflection reflect(const CompileData& compileData) override;
     void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
@@ -87,5 +88,6 @@ private:
 
     ref<ComputePass> mpComputePass;
     std::unique_ptr<EnvMapSampler> mpEnvMapSampler;
-    uint32_t mMaxBounces = 3;
+    uint32_t mMaxBounces = 0;
+    std::string mPathNotation;
 };

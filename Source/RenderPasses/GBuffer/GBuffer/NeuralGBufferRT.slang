@@ -53,19 +53,12 @@ RWTexture2D<PackedHitInfo> gVBuffer;
 RWTexture2D<uint> gTime;
 RWTexture2D<float4> gViewW;
 
-RWTexture2D<float> gRefractMask;
-RWTexture2D<float4> gRefractDirW;
-RWTexture2D<float4> gRefractPosW;
-RWTexture2D<float4> gRefractNormalW;
-RWTexture2D<float4> gRefractDiffRough;
-RWTexture2D<float4> gRefractEmissive;
-
-RWTexture2D<float> gRefractThroughMask;
-RWTexture2D<float4> gRefractThroughDirW;
-RWTexture2D<float4> gRefractThroughPosW;
-RWTexture2D<float4> gRefractThroughNormalW;
-RWTexture2D<float4> gRefractThroughDiffRough;
-RWTexture2D<float4> gRefractThroughEmissive;
+RWTexture2D<float>  gBounceMask;
+RWTexture2D<float4> gBounceDirW;
+RWTexture2D<float4> gBouncePosW;
+RWTexture2D<float4> gBounceNormalW;
+RWTexture2D<float4> gBounceDiffRough;
+RWTexture2D<float4> gBounceEmissive;
 
 #define is_valid(name) (is_valid_##name != 0)
 
@@ -91,7 +84,7 @@ struct RayData
     }
 };
 
-struct RefractGBufferRT
+struct NeuralGBufferRT
 {
     static const bool kComputeDepthOfField = COMPUTE_DEPTH_OF_FIELD;
     static const bool kUseAlphaTest = USE_ALPHA_TEST;
@@ -104,9 +97,6 @@ struct RefractGBufferRT
     float2 invFrameDim;
     uint frameCount;
     float screenSpacePixelSpreadAngle;
-    float3 sceneMinPoint;
-    float sceneScale;
-    float sceneRadius;
 
     EnvMapSampler envMapSampler;
 
@@ -318,99 +308,73 @@ struct RefractGBufferRT
         float4 weights = mi.getScatterWeights(sd);
 
         // Encode hit information.
-        if (rayData.bounce == 0)
+        const uint bounce = rayData.bounce;
+        if (bounce == 0)
         {
             if (is_valid(gVBuffer))
                 gVBuffer[pixel] = hit.getData();
 
-            if (weights[3] > 0.f)
-            {
-                if (is_valid(gRefractMask))
-                    gRefractMask[pixel] = weights[3];
-
-                rayData.hitPosW = sd.computeRayOrigin(false);
-                rayData.nextDirW = mi.getRefractionDir(sd);
-                return;
-            }
+            if (is_valid(gBounceMask))
+                gBounceMask[pixel] = 1.f;
         }
-        else if (rayData.bounce == 1)
+
+        if (bounce == MAX_BOUNCES - 1)
         {
             // record buffers
             const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
 
-            if (is_valid(gRefractThroughMask))
-                gRefractThroughMask[pixel] = gRefractMask[pixel] * weights[3];
-
-            if (is_valid(gRefractMask))
-                gRefractMask[pixel] *= 1.f - weights[2] - weights[3];
-            if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
-            if (is_valid(gRefractPosW))
-                gRefractPosW[pixel] = gbuf.posW;
-            if (is_valid(gRefractNormalW))
-                gRefractNormalW[pixel] = gbuf.normW;
-            if (is_valid(gRefractDiffRough))
-                gRefractDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
-            if (is_valid(gRefractEmissive))
-                gRefractEmissive[pixel] = gbuf.emissive;
-
-            if (weights[3] > 0.f)
-            {
-                rayData.hitPosW = sd.computeRayOrigin(false);
-                rayData.nextDirW = mi.getRefractionDir(sd);
-            }
-            else
-                rayData.exit = true;
-
-            return;
-        }
-        else if (rayData.bounce == 2)
-        {
-            // record buffers
-            const GBufferData gbuf = prepareGBufferData(sd, v, mi, bsdfProperties);
-
-            if (is_valid(gRefractThroughDirW))
-                gRefractThroughDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
-            if (is_valid(gRefractThroughPosW))
-                gRefractThroughPosW[pixel] = gbuf.posW;
-            if (is_valid(gRefractThroughNormalW))
-                gRefractThroughNormalW[pixel] = gbuf.normW;
-            if (is_valid(gRefractThroughDiffRough))
-                gRefractThroughDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
-            if (is_valid(gRefractThroughEmissive))
-                gRefractThroughEmissive[pixel] = gbuf.emissive;
+            if (is_valid(gBounceDirW))
+                gBounceDirW[pixel] = float4(rayDir, length(sd.posW - rayOrigin));
+            if (is_valid(gBouncePosW))
+                gBouncePosW[pixel] = gbuf.posW;
+            if (is_valid(gBounceNormalW))
+                gBounceNormalW[pixel] = gbuf.normW;
+            if (is_valid(gBounceDiffRough))
+                gBounceDiffRough[pixel] = float4(gbuf.baseColorMetallic.xyz * rayData.weight, gbuf.specRough.w);
+            if (is_valid(gBounceEmissive))
+                gBounceEmissive[pixel] = gbuf.emissive;
 
             rayData.exit = true;
             return;
         }
 
-        if (is_valid(gRefractMask))
-            gRefractMask[pixel] = 0.f;
-        if (is_valid(gRefractDirW))
-            gRefractDirW[pixel] = {};
-        if (is_valid(gRefractPosW))
-            gRefractPosW[pixel] = {};
-        if (is_valid(gRefractNormalW))
-            gRefractNormalW[pixel] = {};
-        if (is_valid(gRefractDiffRough))
-            gRefractDiffRough[pixel] = {};
-        if (is_valid(gRefractEmissive))
-            gRefractEmissive[pixel] = {};
+        uint bounceType = ((uint)PATH_NOTATION >> bounce) & 1;
+        float weight = bounceType == 0 ? weights[2] : weights[3];
+        if (weight > 1e-4)
+        {
+            if (is_valid(gBounceMask))
+                gBounceMask[pixel] *= weight;
 
-        if (is_valid(gRefractThroughMask))
-            gRefractThroughMask[pixel] = 0.f;
-        if (is_valid(gRefractThroughDirW))
-            gRefractThroughDirW[pixel] = {};
-        if (is_valid(gRefractThroughPosW))
-            gRefractThroughPosW[pixel] = {};
-        if (is_valid(gRefractThroughNormalW))
-            gRefractThroughNormalW[pixel] = {};
-        if (is_valid(gRefractThroughDiffRough))
-            gRefractThroughDiffRough[pixel] = {};
-        if (is_valid(gRefractThroughEmissive))
-            gRefractThroughEmissive[pixel] = {};
+            if (bounceType == 0)
+            {
+                // reflection
+                rayData.hitPosW = sd.computeRayOrigin(true);
+                rayData.nextDirW = mi.getReflectionDir(sd);
+            }
+            else if (bounceType == 1)
+            {
+                // transmission
+                rayData.hitPosW = sd.computeRayOrigin(false);
+                rayData.nextDirW = mi.getRefractionDir(sd);
+            }
+        }
+        else
+        {
+            if (is_valid(gBounceMask))
+                gBounceMask[pixel] = 0;
+            if (is_valid(gBounceDirW))
+                gBounceDirW[pixel] = {};
+            if (is_valid(gBouncePosW))
+                gBouncePosW[pixel] = {};
+            if (is_valid(gBounceNormalW))
+                gBounceNormalW[pixel] = {};
+            if (is_valid(gBounceDiffRough))
+                gBounceDiffRough[pixel] = {};
+            if (is_valid(gBounceEmissive))
+                gBounceEmissive[pixel] = {};
 
-        rayData.exit = true;
+            rayData.exit = true;
+        }
     }
 
     float2 computeMotionVectorBackground(const uint2 pixel, const float3 rayOrigin, const float3 rayDir)
@@ -426,53 +390,40 @@ struct RefractGBufferRT
 
     void writeMiss(const uint2 pixel, const float3 rayOrigin, const float3 rayDir, inout RayData rayData)
     {
-        if (is_valid(gVBuffer))
-            gVBuffer[pixel] = {};
+        const uint bounce = rayData.bounce;
 
-        if (rayData.bounce < 2)
+        if (bounce == 0)
         {
-            if (is_valid(gRefractMask))
-                gRefractMask[pixel] = 0.f;
-            if (is_valid(gRefractDirW))
-                gRefractDirW[pixel] = {};
-            if (is_valid(gRefractEmissive))
-                gRefractEmissive[pixel] = {};
-            if (is_valid(gRefractPosW))
-                gRefractPosW[pixel] = {};
-            if (is_valid(gRefractNormalW))
-                gRefractNormalW[pixel] = {};
-            if (is_valid(gRefractDiffRough))
-                gRefractDiffRough[pixel] = {};
+            if (is_valid(gVBuffer))
+                gVBuffer[pixel] = {};
         }
 
-        if (is_valid(gRefractThroughPosW))
-            gRefractThroughPosW[pixel] = {};
-        if (is_valid(gRefractThroughNormalW))
-            gRefractThroughNormalW[pixel] = {};
-        if (is_valid(gRefractThroughDiffRough))
-            gRefractThroughDiffRough[pixel] = {};
-
-        if (rayData.bounce == 0)
+        if (bounce == MAX_BOUNCES - 1)
         {
-            if (is_valid(gRefractThroughMask))
-                gRefractThroughMask[pixel] = 0.f;
-            if (is_valid(gRefractThroughDirW))
-                gRefractThroughDirW[pixel] = {};
-            if (is_valid(gRefractThroughEmissive))
-                gRefractThroughEmissive[pixel] = {};
-        }
-        else
-        {
-            if (is_valid(gRefractThroughDirW))
-                gRefractThroughDirW[pixel] = float4(rayDir, 0.f);
-
             float3 emission = float3(0.0f);
             if (USE_ENV_LIGHT)
                 emission = envMapSampler.eval(rayDir);
 
-            if (is_valid(gRefractThroughEmissive))
-                gRefractThroughEmissive[pixel] = float4(emission, 1.f);
+            if (is_valid(gBounceEmissive))
+                gBounceEmissive[pixel] = float4(emission, 1.f);
         }
+        else
+        {
+            if (is_valid(gBounceMask))
+                gBounceMask[pixel] = 0;
+
+            if (is_valid(gBounceEmissive))
+                gBounceEmissive[pixel] = {};
+        }
+
+        if (is_valid(gBounceDirW))
+            gBounceDirW[pixel] = {};
+        if (is_valid(gBouncePosW))
+            gBouncePosW[pixel] = {};
+        if (is_valid(gBounceNormalW))
+            gBounceNormalW[pixel] = {};
+        if (is_valid(gBounceDiffRough))
+            gBounceDiffRough[pixel] = {};
 
         rayData.exit = true;
     }

@@ -462,8 +462,6 @@ struct PathTracer
         // Handle reflection events.
         if (bs.isLobe(LobeType::Reflection))
         {
-            path.setScatterType(bs.isLobe(LobeType::SpecularReflection) ? BounceType::Specular : BounceType::Diffuse);
-
             // We classify specular events as diffuse if the roughness is above some threshold.
             float roughness = mi.getProperties(sd).roughness;
             bool isDiffuse = bs.isLobe(LobeType::DiffuseReflection) || roughness > params.specularRoughnessThreshold;
@@ -488,7 +486,6 @@ struct PathTracer
         // Handle transmission events.
         if (bs.isLobe(LobeType::Transmission))
         {
-            path.setScatterType(BounceType::Transmission);
             path.incrementBounces(BounceType::Transmission);
             path.setTransmission();
 
@@ -1232,34 +1229,4 @@ struct PathTracer
             outputDirectColor[pixel] = float4(path.directColor, 1.f);
         }
     }
-
-    //void writeBounceOutput(const PathState path)
-    //{
-    //    if (!kOutputBounceData)
-    //        return;
-
-    //    assert(!any(isnan(path.L)));
-    //    assert(kSamplesPerPixel == 1);
-        
-    //    const uint2 pixel = path.getPixel();
-    //    // const uint idx = path.getVertexIndex() - 1;
-
-    //    outputBounce0[pixel] = float4(float3(0), 1.f);
-    //    outputBounce1[pixel] = float4(float3(0), 1.f);
-    //    outputBounce2[pixel] = float4(float3(0), 1.f);
-    //    outputBounce3[pixel] = float4(float3(0), 1.f);
-    //    outputBounceOther[pixel] = float4(float3(0), 1.f);
-
-    //    if (path.scatterType[0] == (uint)BounceType::Diffuse)
-    //        outputBounce0[pixel] = float4(path.L, 1.f);
-    //    else if (path.scatterType[0] == (uint)BounceType::Specular)
-    //        outputBounce1[pixel] = float4(path.L, 1.f);
-    //    else if (path.scatterType[0] == (uint)BounceType::Transmission && path.scatterType[1] == (uint)BounceType::Transmission)
-    //        outputBounce2[pixel] = float4(path.L, 1.f);
-    //    else if (path.scatterType[0] == (uint)BounceType::Transmission && path.scatterType[1] == (uint)BounceType::Specular && path.scatterType[2] == (uint)BounceType::Transmission)
-    //        outputBounce3[pixel] = float4(path.L, 1.f);
-    //    else
-    //        outputBounceOther[pixel] = float4(path.L, 1.f);
-    //}
-
 };

@@ -29,9 +29,9 @@
 
 import Scene.Raytracing;
 import Scene.Intersection;
-import ReflectGBufferRT;
+import NeuralGBufferRT;
 
-ConstantBuffer<ReflectGBufferRT> gGBufferRT;
+ConstantBuffer<NeuralGBufferRT> gGBufferRT;
 
 //
 // Shader entry point for miss shader.
@@ -52,7 +52,7 @@ void miss(inout RayData rayData)
 [shader("anyhit")]
 void anyHit(inout RayData rayData, BuiltInTriangleIntersectionAttributes attribs)
 {
-    if (ReflectGBufferRT::kUseAlphaTest)
+    if (NeuralGBufferRT::kUseAlphaTest)
     {
         // Alpha test for non-opaque geometry.
         GeometryInstanceID instanceID = getGeometryInstanceID();
@@ -200,7 +200,7 @@ void rayGen()
         // Trace ray.
         TraceRay(
             gScene.rtAccel,
-            ReflectGBufferRT::kRayFlags,
+            NeuralGBufferRT::kRayFlags,
             0xff /* instanceInclusionMask */,
             0 /* hitIdx */,
             rayTypeCount,

@@ -54,47 +54,13 @@ namespace
 {
 Falcor::ChannelList kInputChannels = {
     {"color", "gColor", "Output color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    {"direct", "gDirect", "Output direct color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    {"directColor", "gDirectColor", "Output direct color without shadow (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    //{"bounce0", "gBounce0", "Output bounce 0 color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    //{"bounce1", "gBounce1", "Output bounce 1 color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    //{"bounce2", "gBounce2", "Output bounce 2 color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    //{"bounce3", "gBounce3", "Output bounce 3 color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
-    //{"bounceOther", "gBounceOther", "Output bounce other color (linear)", true /* optional */, ResourceFormat::RGBA32Float},
 
-    {"mask", "gMask", "Mask", true /* optional */, ResourceFormat::R32Float},
-    {"posW", "gPosW", "Position in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"normW", "gNormW", "Shading normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"viewW", "gViewW", "View direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"diffRough", "gDiffRough", "Diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
-    {"emissive", "gEmissive", "Emissive color", true /* optional */, ResourceFormat::RGBA32Float},
-
-    {"reflectMask", "gReflectMask", "Reflect mask", true /* optional */, ResourceFormat::R32Float},
-    {"reflectDirW", "gReflectDirW", "Reflect direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"reflectPosW", "gReflectPosW", "Reflect position in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"reflectNormalW", "gReflectNormalW", "Reflect normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"reflectDiffRough", "gReflectDiffRough", "Reflect diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
-    {"reflectEmissive", "gReflectEmissive", "Reflect emissive color", true /* optional */, ResourceFormat::RGBA32Float},
-
-    {"refractMask", "gRefractMask", "Refract mask", true /* optional */, ResourceFormat::R32Float},
-    {"refractDirW", "gRefractDirW", "Refract direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractPosW", "gRefractPosW", "Refract position in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractNormalW", "gRefractNormalW", "Refract normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractDiffRough", "gRefractDiffRough", "Refract diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractEmissive", "gRefractEmissive", "Refract emissive color", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractThroughMask", "gRefractThroughMask", "Refract mask", true /* optional */, ResourceFormat::R32Float},
-    {"refractThroughDirW", "gRefractThroughDirW", "Refract direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractThroughPosW", "gRefractThroughPosW", "Refract position in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractThroughNormalW", "gRefractThroughNormalW", "Refract normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractThroughDiffRough", "gRefractThroughDiffRough", "Refract diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
-    {"refractThroughEmissive", "gRefractThroughEmissive", "Refract emissive color", true /* optional */, ResourceFormat::RGBA32Float},
-
-    {"mixedMask", "gMixedMask", "Mixed mask", true /* optional */, ResourceFormat::R32Float},
-    {"mixedDirW", "gMixedDirW", "Mixed direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"mixedPosW", "gMixedPosW", "Mixed position in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"mixedNormalW", "gMixedNormalW", "Mixed normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
-    {"mixedDiffRough", "gMixedDiffRough", "Mixed diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
-    {"mixedEmissive", "gMixedEmissive", "Mixed emissive color", true /* optional */, ResourceFormat::RGBA32Float},
+    {"bounceMask", "gBounceMask", "Bounce mask", true /* optional */, ResourceFormat::R32Float},
+    {"bounceDirW", "gBounceDirW", "Bounce direction in world space", true /* optional */, ResourceFormat::RGBA32Float},
+    {"bouncePosW", "gBouncePosW", "Bounce position in world space", true /* optional */, ResourceFormat::RGBA32Float},
+    {"bounceNormalW", "gBounceNormalW", "Bounce normal in world space", true /* optional */, ResourceFormat::RGBA32Float},
+    {"bounceDiffRough", "gBounceDiffRough", "Bounce diffuse albedo and roughness", true /* optional */, ResourceFormat::RGBA32Float},
+    {"bounceEmissive", "gBounceEmissive", "Bounce emissive color", true /* optional */, ResourceFormat::RGBA32Float},
 };
 
 const char kShaderFile[] = "RenderPasses/NeuralAccumulatePass/NeuralAccumulatePass.cs.slang";
@@ -144,6 +110,7 @@ NeuralAccumulatePass::NeuralAccumulatePass(ref<Device> pDevice, const Properties
 
     for (const auto& c : kInputChannels)
     {
+        // e.g. gNormW to gNormW_out
         ChannelDesc t = c;
         t.name = c.name + "_out";
         t.texname = "gOut" + c.texname.substr(1);
