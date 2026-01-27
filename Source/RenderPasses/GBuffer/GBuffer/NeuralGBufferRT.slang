@@ -338,7 +338,7 @@ struct NeuralGBufferRT
             return;
         }
 
-        uint bounceType = ((uint)PATH_NOTATION >> bounce) & 1;
+        uint bounceType = ((uint)PATH_NOTATION >> (bounce+1)) & 1;
         float weight = bounceType == 0 ? weights[2] : weights[3];
         if (weight > 1e-4)
         {

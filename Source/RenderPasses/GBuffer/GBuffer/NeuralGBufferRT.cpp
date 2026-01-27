@@ -234,7 +234,6 @@ void NeuralGBufferRT::parseProperties(const Properties& props)
                     path_notation += (uint32_t)0 << i;
                     mMaxBounces += 1;
                 }
-
                 else if (c == 't' || c == 'T')
                 {
                     // Transmission
