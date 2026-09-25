@@ -1,0 +1,4 @@
+add_plugin(NeuralSurfaceSamplePass)
+target_sources(NeuralSurfaceSamplePass PRIVATE NeuralSurfaceSamplePass.cpp NeuralSurfaceSamplePass.h NeuralSurfaceSamplePass.cs.slang)
+target_copy_shaders(NeuralSurfaceSamplePass RenderPasses/NeuralSurfaceSamplePass)
+target_source_group(NeuralSurfaceSamplePass "RenderPasses")
